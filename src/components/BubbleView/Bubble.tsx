@@ -46,6 +46,8 @@ export function Bubble({ task, x, y, r, onDragStart, dragRef, onBubbleTouchStart
     // Don't interfere with the complete button
     if ((e.target as HTMLElement).closest('button')) return;
     e.stopPropagation();
+    // Capture pointer so pointerup always fires here even if bubble moves
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     pointerDownPos.current = { x: e.clientX, y: e.clientY };
     pointerDownTime.current = Date.now();
     onBubbleTouchStart?.();
@@ -58,7 +60,7 @@ export function Bubble({ task, x, y, r, onDragStart, dragRef, onBubbleTouchStart
     const dy = e.clientY - pointerDownPos.current.y;
     const dt = Date.now() - pointerDownTime.current;
     // Short tap with minimal movement → open task detail
-    if (dt < 250 && Math.sqrt(dx * dx + dy * dy) < 10) {
+    if (dt < 300 && Math.sqrt(dx * dx + dy * dy) < 15) {
       setSelectedTask(task.id);
     }
     pointerDownPos.current = null;
