@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Task } from '../../types';
 import { BUBBLE_COLORS } from '../../constants/colors';
@@ -23,8 +23,9 @@ const urgencyColors = {
 };
 
 export function Bubble({ task, x, y, r, onDragStart, dragRef, onBubbleTouchStart }: BubbleProps) {
-  const { completeTask } = useStore();
+  const { setSelectedTask, completeTask } = useStore();
   const [completing, setCompleting] = useState(false);
+  const touchStartRef = useRef<{ time: number; x: number; y: number } | null>(null);
 
   const color = BUBBLE_COLORS[task.colorIndex % BUBBLE_COLORS.length];
   const urgency = getUrgency(task);
@@ -40,12 +41,32 @@ export function Bubble({ task, x, y, r, onDragStart, dragRef, onBubbleTouchStart
     }, 400);
   };
 
+  // Pointer events drive drag (works on desktop + mobile)
   const handlePointerDown = (e: React.PointerEvent) => {
-    // Don't interfere with the complete button
     if ((e.target as HTMLElement).closest('button')) return;
     e.stopPropagation();
-    onBubbleTouchStart?.();
     onDragStart(task.id, e.clientX, e.clientY);
+  };
+
+  // Touch events drive tap detection — most reliable on iOS/Android
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if ((e.target as HTMLElement).closest('button')) return;
+    const t = e.touches[0];
+    touchStartRef.current = { time: Date.now(), x: t.clientX, y: t.clientY };
+    onBubbleTouchStart?.();
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const t = e.changedTouches[0];
+    const dt = Date.now() - touchStartRef.current.time;
+    const dx = t.clientX - touchStartRef.current.x;
+    const dy = t.clientY - touchStartRef.current.y;
+    touchStartRef.current = null;
+    if (dt < 350 && Math.sqrt(dx * dx + dy * dy) < 20) {
+      e.preventDefault(); // block the synthetic click that follows touchend
+      setSelectedTask(task.id);
+    }
   };
 
   // Font size scales with bubble radius
@@ -67,8 +88,11 @@ export function Bubble({ task, x, y, r, onDragStart, dragRef, onBubbleTouchStart
         willChange: 'transform',
         cursor: isDragged ? 'grabbing' : 'grab',
         zIndex: isDragged ? 10 : 1,
+        touchAction: 'none',
       }}
       onPointerDown={handlePointerDown}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
       <AnimatePresence>
         {!completing && (

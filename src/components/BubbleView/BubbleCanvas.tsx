@@ -124,7 +124,7 @@ export function BubbleCanvas() {
   const mountedRef = useRef(true);
   const dragRef = useRef<DragState | null>(null);
 
-  const { currentDate, setCurrentDate, setSelectedTask } = useStore();
+  const { currentDate, setCurrentDate } = useStore();
   const allTasks = useStore(state => state.tasks);
 
   const tasks = useMemo(
@@ -168,9 +168,6 @@ export function BubbleCanvas() {
     }
   }, [loop]);
 
-  // Track tap start for tap-vs-drag detection in handlePointerUp
-  const tapStartRef = useRef({ time: 0, clientX: 0, clientY: 0 });
-
   // Drag handlers
   const handleDragStart = useCallback((id: string, clientX: number, clientY: number) => {
     const container = containerRef.current;
@@ -183,7 +180,6 @@ export function BubbleCanvas() {
     node.vx = 0;
     node.vy = 0;
     dragRef.current = { id, offsetX: cx - node.x, offsetY: cy - node.y, lastX: cx, lastY: cy, velX: 0, velY: 0 };
-    tapStartRef.current = { time: Date.now(), clientX, clientY };
   }, []);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
@@ -207,18 +203,9 @@ export function BubbleCanvas() {
     }
   }, []);
 
-  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+  const handlePointerUp = useCallback(() => {
     const drag = dragRef.current;
     if (!drag) return;
-    // Detect tap: short duration + minimal movement → open task detail
-    const dt = Date.now() - tapStartRef.current.time;
-    const dx = e.clientX - tapStartRef.current.clientX;
-    const dy = e.clientY - tapStartRef.current.clientY;
-    if (dt < 300 && Math.sqrt(dx * dx + dy * dy) < 15) {
-      dragRef.current = null;
-      setSelectedTask(drag.id);
-      return;
-    }
     const node = nodesRef.current.find(n => n.id === drag.id);
     if (node) {
       // Release with throw velocity, capped at THROW_MAX_SPEED
@@ -228,7 +215,7 @@ export function BubbleCanvas() {
       node.vy = drag.velY * scale;
     }
     dragRef.current = null;
-  }, [setSelectedTask]);
+  }, []);
 
   // Restart simulation when tasks change
   const tasksRef = useRef(tasks);
