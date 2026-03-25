@@ -252,13 +252,21 @@ export function BubbleCanvas() {
     };
   }, []);
 
-  // Swipe to change day (only when not dragging a bubble)
+  // Swipe to change day (only when not dragging or tapping a bubble)
   const touchStartX = useRef(0);
+  const bubbleTouchedRef = useRef(false);
+  const handleBubbleTouchStart = useCallback(() => {
+    bubbleTouchedRef.current = true;
+  }, []);
   const handleTouchStart = (e: React.TouchEvent) => {
     if (dragRef.current) return;
     touchStartX.current = e.touches[0].clientX;
   };
   const handleTouchEnd = (e: React.TouchEvent) => {
+    if (bubbleTouchedRef.current) {
+      bubbleTouchedRef.current = false;
+      return;
+    }
     if (dragRef.current) return;
     const diff = touchStartX.current - e.changedTouches[0].clientX;
     if (Math.abs(diff) > 60) {
@@ -300,6 +308,7 @@ export function BubbleCanvas() {
                   r={getBubbleRadius(task)}
                   onDragStart={handleDragStart}
                   dragRef={dragRef}
+                  onBubbleTouchStart={handleBubbleTouchStart}
                 />
               );
             })}

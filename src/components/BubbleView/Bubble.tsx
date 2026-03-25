@@ -12,6 +12,7 @@ interface BubbleProps {
   r: number;
   onDragStart: (id: string, clientX: number, clientY: number) => void;
   dragRef: React.RefObject<{ id: string } | null>;
+  onBubbleTouchStart?: () => void;
 }
 
 const urgencyColors = {
@@ -21,10 +22,11 @@ const urgencyColors = {
   none: 'transparent',
 };
 
-export function Bubble({ task, x, y, r, onDragStart, dragRef }: BubbleProps) {
+export function Bubble({ task, x, y, r, onDragStart, dragRef, onBubbleTouchStart }: BubbleProps) {
   const { setSelectedTask, completeTask } = useStore();
   const [completing, setCompleting] = useState(false);
   const pointerDownPos = useRef<{ x: number; y: number } | null>(null);
+  const pointerDownTime = useRef<number>(0);
 
   const color = BUBBLE_COLORS[task.colorIndex % BUBBLE_COLORS.length];
   const urgency = getUrgency(task);
@@ -45,6 +47,8 @@ export function Bubble({ task, x, y, r, onDragStart, dragRef }: BubbleProps) {
     if ((e.target as HTMLElement).closest('button')) return;
     e.stopPropagation();
     pointerDownPos.current = { x: e.clientX, y: e.clientY };
+    pointerDownTime.current = Date.now();
+    onBubbleTouchStart?.();
     onDragStart(task.id, e.clientX, e.clientY);
   };
 
@@ -52,8 +56,9 @@ export function Bubble({ task, x, y, r, onDragStart, dragRef }: BubbleProps) {
     if (!pointerDownPos.current) return;
     const dx = e.clientX - pointerDownPos.current.x;
     const dy = e.clientY - pointerDownPos.current.y;
-    // If barely moved, treat as a tap → open task detail
-    if (Math.sqrt(dx * dx + dy * dy) < 8 && dragRef.current?.id === task.id) {
+    const dt = Date.now() - pointerDownTime.current;
+    // Short tap with minimal movement → open task detail
+    if (dt < 250 && Math.sqrt(dx * dx + dy * dy) < 10) {
       setSelectedTask(task.id);
     }
     pointerDownPos.current = null;
