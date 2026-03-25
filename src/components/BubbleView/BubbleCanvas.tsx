@@ -273,6 +273,7 @@ export function BubbleCanvas() {
       <div
         ref={containerRef}
         className="flex-1 relative overflow-hidden"
+        style={{ touchAction: 'none' }}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}

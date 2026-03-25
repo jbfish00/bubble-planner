@@ -53,7 +53,7 @@ export function BottomNav() {
   const { viewMode, setViewMode } = useStore();
 
   return (
-    <nav className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-100 dark:border-gray-800 safe-area-bottom">
+    <nav className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-100 dark:border-gray-800 safe-area-bottom relative z-50">
       <div className="flex">
         {navItems.map(item => {
           const isActive = viewMode === item.mode;
@@ -61,6 +61,7 @@ export function BottomNav() {
             <button
               key={item.mode}
               className="flex-1 py-4 flex flex-col items-center gap-1 transition-colors"
+              style={{ touchAction: 'manipulation' }}
               onClick={() => {
                 setViewMode(item.mode);
                 if ('vibrate' in navigator) navigator.vibrate(10);
