@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Task } from '../../types';
 import { BUBBLE_COLORS } from '../../constants/colors';
@@ -23,10 +23,8 @@ const urgencyColors = {
 };
 
 export function Bubble({ task, x, y, r, onDragStart, dragRef, onBubbleTouchStart }: BubbleProps) {
-  const { setSelectedTask, completeTask } = useStore();
+  const { completeTask } = useStore();
   const [completing, setCompleting] = useState(false);
-  const pointerDownPos = useRef<{ x: number; y: number } | null>(null);
-  const pointerDownTime = useRef<number>(0);
 
   const color = BUBBLE_COLORS[task.colorIndex % BUBBLE_COLORS.length];
   const urgency = getUrgency(task);
@@ -46,24 +44,8 @@ export function Bubble({ task, x, y, r, onDragStart, dragRef, onBubbleTouchStart
     // Don't interfere with the complete button
     if ((e.target as HTMLElement).closest('button')) return;
     e.stopPropagation();
-    // Capture pointer so pointerup always fires here even if bubble moves
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    pointerDownPos.current = { x: e.clientX, y: e.clientY };
-    pointerDownTime.current = Date.now();
     onBubbleTouchStart?.();
     onDragStart(task.id, e.clientX, e.clientY);
-  };
-
-  const handlePointerUp = (e: React.PointerEvent) => {
-    if (!pointerDownPos.current) return;
-    const dx = e.clientX - pointerDownPos.current.x;
-    const dy = e.clientY - pointerDownPos.current.y;
-    const dt = Date.now() - pointerDownTime.current;
-    // Short tap with minimal movement → open task detail
-    if (dt < 300 && Math.sqrt(dx * dx + dy * dy) < 15) {
-      setSelectedTask(task.id);
-    }
-    pointerDownPos.current = null;
   };
 
   // Font size scales with bubble radius
@@ -87,7 +69,6 @@ export function Bubble({ task, x, y, r, onDragStart, dragRef, onBubbleTouchStart
         zIndex: isDragged ? 10 : 1,
       }}
       onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp}
     >
       <AnimatePresence>
         {!completing && (
