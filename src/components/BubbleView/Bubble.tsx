@@ -22,7 +22,7 @@ const urgencyColors = {
   none: 'transparent',
 };
 
-export function Bubble({ task, x, y, r, onDragStart, dragRef, onBubbleTouchStart }: BubbleProps) {
+export function Bubble({ task, x, y, r, onBubbleTouchStart }: BubbleProps) {
   const { setSelectedTask, completeTask } = useStore();
   const [completing, setCompleting] = useState(false);
   const touchStartRef = useRef<{ time: number; x: number; y: number } | null>(null);
@@ -39,13 +39,6 @@ export function Bubble({ task, x, y, r, onDragStart, dragRef, onBubbleTouchStart
     setTimeout(async () => {
       await completeTask(task.id);
     }, 400);
-  };
-
-  // Pointer events drive drag (works on desktop + mobile)
-  const handlePointerDown = (e: React.PointerEvent) => {
-    if ((e.target as HTMLElement).closest('button')) return;
-    e.stopPropagation();
-    onDragStart(task.id, e.clientX, e.clientY);
   };
 
   // Touch events drive tap detection — most reliable on iOS/Android
@@ -74,8 +67,6 @@ export function Bubble({ task, x, y, r, onDragStart, dragRef, onBubbleTouchStart
   const subFontSize = Math.max(11, fontSize - 3);
   const textWidth = Math.floor(diameter * 0.65);
 
-  const isDragged = dragRef.current?.id === task.id;
-
   return (
     <div
       className="absolute"
@@ -86,11 +77,9 @@ export function Bubble({ task, x, y, r, onDragStart, dragRef, onBubbleTouchStart
         top: 0,
         left: 0,
         willChange: 'transform',
-        cursor: isDragged ? 'grabbing' : 'grab',
-        zIndex: isDragged ? 10 : 1,
+        cursor: 'pointer',
         touchAction: 'none',
       }}
-      onPointerDown={handlePointerDown}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
@@ -99,9 +88,9 @@ export function Bubble({ task, x, y, r, onDragStart, dragRef, onBubbleTouchStart
           <motion.div
             className="absolute inset-0 select-none rounded-full"
             initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: isDragged ? 1.08 : 1, opacity: 1 }}
+            animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
-            whileHover={{ scale: isDragged ? 1.08 : 1.07 }}
+            whileHover={{ scale: 1.07 }}
             transition={{ type: 'spring', stiffness: 280, damping: 22 }}
           >
             {/* Urgency ring */}
@@ -120,9 +109,7 @@ export function Bubble({ task, x, y, r, onDragStart, dragRef, onBubbleTouchStart
               style={{
                 inset: urgency !== 'none' ? 4 : 0,
                 background: `radial-gradient(circle at 32% 32%, ${color.light}, ${color.base})`,
-                boxShadow: isDragged
-                  ? `0 12px 32px ${color.base}88, inset 0 2px 0 rgba(255,255,255,0.55)`
-                  : `0 6px 20px ${color.base}55, inset 0 2px 0 rgba(255,255,255,0.55)`,
+                boxShadow: `0 6px 20px ${color.base}55, inset 0 2px 0 rgba(255,255,255,0.55)`,
               }}
             >
               {/* Glass shine */}

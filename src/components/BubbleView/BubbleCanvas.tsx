@@ -103,7 +103,6 @@ function tickPhysics(nodes: PhysicsNode[], width: number, height: number, dragge
   }
 }
 
-const THROW_MAX_SPEED = 18;
 
 interface DragState {
   id: string;
@@ -168,54 +167,6 @@ export function BubbleCanvas() {
     }
   }, [loop]);
 
-  // Drag handlers
-  const handleDragStart = useCallback((id: string, clientX: number, clientY: number) => {
-    const container = containerRef.current;
-    if (!container) return;
-    const rect = container.getBoundingClientRect();
-    const node = nodesRef.current.find(n => n.id === id);
-    if (!node) return;
-    const cx = clientX - rect.left;
-    const cy = clientY - rect.top;
-    node.vx = 0;
-    node.vy = 0;
-    dragRef.current = { id, offsetX: cx - node.x, offsetY: cy - node.y, lastX: cx, lastY: cy, velX: 0, velY: 0 };
-  }, []);
-
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    const drag = dragRef.current;
-    if (!drag) return;
-    const container = containerRef.current;
-    if (!container) return;
-    const rect = container.getBoundingClientRect();
-    const cx = e.clientX - rect.left;
-    const cy = e.clientY - rect.top;
-    drag.velX = cx - drag.lastX;
-    drag.velY = cy - drag.lastY;
-    drag.lastX = cx;
-    drag.lastY = cy;
-    const node = nodesRef.current.find(n => n.id === drag.id);
-    if (node) {
-      node.x = cx - drag.offsetX;
-      node.y = cy - drag.offsetY;
-      node.vx = 0;
-      node.vy = 0;
-    }
-  }, []);
-
-  const handlePointerUp = useCallback(() => {
-    const drag = dragRef.current;
-    if (!drag) return;
-    const node = nodesRef.current.find(n => n.id === drag.id);
-    if (node) {
-      // Release with throw velocity, capped at THROW_MAX_SPEED
-      const speed = Math.sqrt(drag.velX ** 2 + drag.velY ** 2);
-      const scale = speed > THROW_MAX_SPEED ? THROW_MAX_SPEED / speed : 1;
-      node.vx = drag.velX * scale;
-      node.vy = drag.velY * scale;
-    }
-    dragRef.current = null;
-  }, []);
 
   // Restart simulation when tasks change
   const tasksRef = useRef(tasks);
@@ -252,14 +203,13 @@ export function BubbleCanvas() {
     };
   }, []);
 
-  // Swipe to change day (only when not dragging or tapping a bubble)
+  // Swipe to change day
   const touchStartX = useRef(0);
   const bubbleTouchedRef = useRef(false);
   const handleBubbleTouchStart = useCallback(() => {
     bubbleTouchedRef.current = true;
   }, []);
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (dragRef.current) return;
     touchStartX.current = e.touches[0].clientX;
   };
   const handleTouchEnd = (e: React.TouchEvent) => {
@@ -267,7 +217,6 @@ export function BubbleCanvas() {
       bubbleTouchedRef.current = false;
       return;
     }
-    if (dragRef.current) return;
     const diff = touchStartX.current - e.changedTouches[0].clientX;
     if (Math.abs(diff) > 60) {
       setCurrentDate(toISODate(addDays(parseISO(currentDate), diff > 0 ? 1 : -1)));
@@ -282,9 +231,6 @@ export function BubbleCanvas() {
         ref={containerRef}
         className="flex-1 relative overflow-hidden"
         style={{ touchAction: 'none' }}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
@@ -306,7 +252,7 @@ export function BubbleCanvas() {
                   x={pos.x}
                   y={pos.y}
                   r={getBubbleRadius(task)}
-                  onDragStart={handleDragStart}
+                  onDragStart={() => {}}
                   dragRef={dragRef}
                   onBubbleTouchStart={handleBubbleTouchStart}
                 />
