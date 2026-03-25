@@ -29,7 +29,7 @@ export function TopBar() {
           >
             B
           </div>
-          <h1 className="text-lg font-bold text-gray-800 dark:text-gray-100">
+          <h1 className="text-lg font-bold text-gray-800 dark:text-gray-100 pl-1">
             {titles[viewMode]}
           </h1>
         </div>

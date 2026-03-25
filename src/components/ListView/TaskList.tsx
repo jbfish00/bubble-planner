@@ -25,7 +25,7 @@ export function TaskList() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="px-4 pt-4 pb-2 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Tasks</h2>
+        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 pl-2">Tasks</h2>
         <Button variant="primary" size="sm" onClick={() => setShowAdd(true)}>
           + Add task
         </Button>
@@ -33,12 +33,12 @@ export function TaskList() {
 
       {/* Filter tabs */}
       <div className="px-4 mb-3">
-        <div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
+        <div className="flex bg-gray-100 dark:bg-gray-800 rounded-none p-1">
           {(['active', 'completed'] as const).map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              className={`flex-1 py-1.5 rounded-none text-sm font-medium transition-all ${
                 filter === f
                   ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm'
                   : 'text-gray-500 dark:text-gray-400'

@@ -21,8 +21,8 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
 
   return (
     <motion.div
-      className="p-4 rounded-2xl shadow-sm cursor-pointer border border-gray-50 dark:border-gray-700"
-      style={{ background: `linear-gradient(135deg, ${color.light}, ${color.base}22)` }}
+      className="p-4 rounded-none shadow-sm cursor-pointer border border-gray-50 dark:border-gray-700"
+      style={{ background: color.light }}
       whileHover={{ scale: 1.02, y: -2 }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
@@ -34,19 +34,19 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
         style={{ backgroundColor: color.base }}
       />
 
-      <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-1 line-clamp-1">
+      <h3 className="font-bold text-gray-900 mb-1 line-clamp-1">
         {project.name}
       </h3>
 
       {project.description && (
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 line-clamp-2">
+        <p className="text-xs text-gray-700 mb-2 line-clamp-2">
           {project.description}
         </p>
       )}
 
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs text-gray-500">Due {formatDisplay(project.dueDate)}</span>
-        <span className="text-xs text-gray-500">{completed}/{total} tasks</span>
+        <span className="text-xs font-medium text-gray-700">Due {formatDisplay(project.dueDate)}</span>
+        <span className="text-xs font-medium text-gray-700">{completed}/{total} tasks</span>
       </div>
 
       {/* Progress bar */}

@@ -31,7 +31,7 @@ export function WeekGrid() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="px-4 pt-4 pb-2 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Week</h2>
+        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 pl-2">Week</h2>
         <div className="flex gap-2">
           <button
             className="w-8 h-8 rounded-full bg-white dark:bg-gray-800 shadow-sm flex items-center justify-center text-gray-600 dark:text-gray-300"

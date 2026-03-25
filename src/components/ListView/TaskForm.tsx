@@ -15,6 +15,8 @@ const HOUR_CHIPS = [0.5, 1, 2, 4, 8, 16];
 const IMPORTANCE_LABELS = ['', 'Low', 'Medium', 'High', 'Critical', 'Urgent'];
 const DIFFICULTY_LABELS = ['', 'Easy', 'Medium', 'Hard', 'Very Hard', 'Expert'];
 
+const INPUT_STYLE = { paddingLeft: '1.5rem' } as const;
+
 export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
   const { addTask, updateTask, projects, currentDate } = useStore();
   const [name, setName] = useState(editTask?.name ?? '');
@@ -70,7 +72,7 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* Name */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-2">
           Task name
         </label>
         <input
@@ -78,28 +80,30 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder="What needs to be done?"
-          className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50 text-base"
+          className="w-full pl-8 pr-6 py-4 rounded-none border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50 text-base"
+          style={INPUT_STYLE}
           autoFocus
         />
       </div>
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-2">
           Description
         </label>
         <textarea
           value={description}
           onChange={e => setDescription(e.target.value)}
           placeholder="Optional notes..."
-          rows={2}
-          className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50 text-base resize-none"
+          rows={4}
+          className="w-full pl-8 pr-6 py-4 rounded-none border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50 text-base resize-none"
+          style={INPUT_STYLE}
         />
       </div>
 
       {/* Importance */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-2">
           Importance: <span className="text-[#E8A598]">{IMPORTANCE_LABELS[importance]}</span>
         </label>
         <div className="flex gap-2">
@@ -108,7 +112,7 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
               key={v}
               type="button"
               onClick={() => setImportance(v)}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              className={`flex-1 py-3.5 rounded-none text-sm font-semibold transition-all ${
                 importance === v
                   ? 'bg-[#E8A598] text-white shadow-sm'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -122,7 +126,7 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
 
       {/* Difficulty */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-2">
           Difficulty: <span className="text-[#98C5E8]">{DIFFICULTY_LABELS[difficulty]}</span>
         </label>
         <div className="flex gap-2">
@@ -131,7 +135,7 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
               key={v}
               type="button"
               onClick={() => setDifficulty(v)}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              className={`flex-1 py-3.5 rounded-none text-sm font-semibold transition-all ${
                 difficulty === v
                   ? 'bg-[#98C5E8] text-white shadow-sm'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -145,7 +149,7 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
 
       {/* Estimated Hours */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-2">
           Estimated time: <span className="text-[#A8D5A2]">{estimatedHours}h</span>
         </label>
         <div className="flex gap-2 flex-wrap">
@@ -154,7 +158,7 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
               key={h}
               type="button"
               onClick={() => setEstimatedHours(h)}
-              className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              className={`px-5 py-3.5 rounded-none text-sm font-semibold transition-all ${
                 estimatedHours === h
                   ? 'bg-[#A8D5A2] text-white shadow-sm'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -170,7 +174,7 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
             step={0.25}
             value={estimatedHours}
             onChange={e => setEstimatedHours(parseFloat(e.target.value) || 1)}
-            className="w-20 px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#A8D5A2]/50"
+            className="w-24 pl-5 pr-3 py-4 rounded-none border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#A8D5A2]/50"
           />
         </div>
       </div>
@@ -178,38 +182,41 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
       {/* Dates */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-2">
             Due date
           </label>
           <input
             type="date"
             value={dueDate}
             onChange={e => setDueDate(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
+            className="w-full pl-8 pr-6 py-4 rounded-none border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
+            style={INPUT_STYLE}
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-2">
             Start date
           </label>
           <input
             type="date"
             value={startDate}
             onChange={e => setStartDate(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
+            className="w-full pl-8 pr-6 py-4 rounded-none border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
+            style={INPUT_STYLE}
           />
         </div>
       </div>
 
       {/* Recurrence */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-2">
           Recurrence
         </label>
         <select
           value={recurrence ?? ''}
           onChange={e => setRecurrence((e.target.value || null) as Task['recurrence'])}
-          className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
+          className="w-full pl-8 pr-6 py-4 rounded-none border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
+          style={INPUT_STYLE}
         >
           <option value="">None</option>
           <option value="daily">Daily</option>
@@ -222,13 +229,14 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
       {/* Parent project */}
       {projects.length > 0 && (
         <div>
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-2">
             Project
           </label>
           <select
             value={parentProjectId}
             onChange={e => setParentProjectId(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
+            className="w-full pl-8 pr-6 py-4 rounded-none border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
+            style={INPUT_STYLE}
           >
             <option value="">No project</option>
             {projects.map(p => (
@@ -240,7 +248,7 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
 
       {/* Color */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 pl-2">
           Color
         </label>
         <div className="flex gap-3 flex-wrap">
@@ -259,7 +267,7 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
 
       {/* Tags */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-2">
           Tags
         </label>
         <div className="flex flex-wrap gap-2 mb-2">
@@ -275,7 +283,8 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
           onChange={e => setTagInput(e.target.value)}
           onKeyDown={handleAddTag}
           placeholder="Type a tag and press Enter..."
-          className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
+          className="w-full pl-8 pr-6 py-4 rounded-none border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
+          style={INPUT_STYLE}
         />
       </div>
 

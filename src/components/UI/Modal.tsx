@@ -35,7 +35,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
             onClick={onClose}
           />
           <motion.div
-            className="relative w-full sm:max-w-lg bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto"
+            className="relative w-full sm:max-w-2xl bg-white dark:bg-gray-900 rounded-none shadow-2xl max-h-[90vh] overflow-y-auto"
             initial={{ y: '100%', opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
@@ -45,7 +45,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
               <div className="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-4 sm:hidden" />
               {title && (
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{title}</h2>
+                  <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 pl-2">{title}</h2>
                   <button
                     onClick={onClose}
                     className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-lg"

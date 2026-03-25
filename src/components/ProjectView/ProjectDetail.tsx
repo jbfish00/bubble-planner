@@ -30,12 +30,12 @@ export function ProjectDetail({ projectId, onClose }: ProjectDetailProps) {
     <div>
       {/* Header */}
       <div
-        className="rounded-2xl p-4 mb-4"
+        className="rounded-none p-4 mb-4"
         style={{ background: `linear-gradient(135deg, ${color.light}, ${color.base}44)` }}
       >
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-xl font-bold text-gray-800 mb-1">{project.name}</h2>
+            <h2 className="text-xl font-bold text-gray-800 mb-1 pl-1">{project.name}</h2>
             {project.description && (
               <p className="text-sm text-gray-600">{project.description}</p>
             )}

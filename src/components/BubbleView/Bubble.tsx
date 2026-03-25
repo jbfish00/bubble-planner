@@ -41,11 +41,8 @@ export function Bubble({ task, x, y, r }: BubbleProps) {
   const fontSize = Math.max(13, Math.min(18, r / 2.8));
   const subFontSize = Math.max(11, fontSize - 3);
 
-  // How many characters fit roughly in the bubble width
-  const maxChars = Math.floor((diameter * 0.75) / (fontSize * 0.55));
-  const displayName = task.name.length > maxChars
-    ? task.name.slice(0, maxChars - 1) + '…'
-    : task.name;
+  // Inner text area is ~65% of diameter to stay within the circle
+  const textWidth = Math.floor(diameter * 0.65);
 
   return (
     // Outer div: physics-driven position (GPU-accelerated via transform)
@@ -105,10 +102,10 @@ export function Bubble({ task, x, y, r }: BubbleProps) {
 
               {/* Task name — dark for strong contrast */}
               <span
-                className="relative z-10 font-bold text-gray-800 leading-tight px-2"
-                style={{ fontSize: `${fontSize}px` }}
+                className="relative z-10 font-bold text-gray-800 leading-tight text-center break-words"
+                style={{ fontSize: `${fontSize}px`, width: textWidth, maxWidth: textWidth }}
               >
-                {displayName}
+                {task.name}
               </span>
 
               {/* Hours label */}

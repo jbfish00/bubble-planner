@@ -53,11 +53,11 @@ export function TaskDetail() {
         <div>
           {/* Header with color */}
           <div
-            className="rounded-2xl p-5 mb-4"
+            className="rounded-none p-5 mb-4"
             style={{ background: `linear-gradient(135deg, ${color.light}, ${color.base}44)` }}
           >
             <div className="flex items-start justify-between gap-3 mb-2">
-              <h2 className="text-xl font-bold text-gray-800 flex-1">{task.name}</h2>
+              <h2 className="text-xl font-bold text-gray-800 flex-1 pl-1">{task.name}</h2>
               {urgency !== 'none' && (
                 <span className="text-sm font-semibold px-3 py-1 rounded-full text-white flex-shrink-0" style={{ backgroundColor: urgencyColor }}>
                   {urgencyLabel}
@@ -71,30 +71,30 @@ export function TaskDetail() {
 
           {/* Details grid */}
           <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-none p-5">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Importance</p>
               <p className="text-base font-semibold text-gray-800 dark:text-gray-100">{importanceLabels[task.importance]}</p>
             </div>
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-none p-5">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Difficulty</p>
               <p className="text-base font-semibold text-gray-800 dark:text-gray-100">{difficultyLabels[task.difficulty]}</p>
             </div>
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-none p-5">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Estimated time</p>
               <p className="text-base font-semibold text-gray-800 dark:text-gray-100">{task.estimatedHours}h</p>
             </div>
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-none p-5">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Due date</p>
               <p className="text-base font-semibold text-gray-800 dark:text-gray-100">{formatFull(task.dueDate)}</p>
             </div>
             {task.startDate && (
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-none p-5">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Start date</p>
                 <p className="text-base font-semibold text-gray-800 dark:text-gray-100">{formatFull(task.startDate)}</p>
               </div>
             )}
             {task.recurrence && (
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-none p-5">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Recurrence</p>
                 <p className="text-base font-semibold text-gray-800 dark:text-gray-100 capitalize">{task.recurrence}</p>
               </div>

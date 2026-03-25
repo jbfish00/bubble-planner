@@ -52,7 +52,7 @@ export function TaskRow({ task }: TaskRowProps) {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20, height: 0, marginBottom: 0 }}
-            className="flex items-center gap-3 p-3 rounded-2xl bg-white dark:bg-gray-800 shadow-sm border border-gray-50 dark:border-gray-700"
+            className="flex items-center gap-3 p-3 rounded-none bg-white dark:bg-gray-800 shadow-sm border border-gray-50 dark:border-gray-700"
           >
             {/* Color indicator */}
             <div

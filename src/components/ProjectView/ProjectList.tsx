@@ -17,7 +17,7 @@ export function ProjectList() {
   return (
     <div className="flex flex-col h-full">
       <div className="px-4 pt-4 pb-2 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Projects</h2>
+        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 pl-2">Projects</h2>
         <Button variant="primary" size="sm" onClick={() => setShowAdd(true)}>
           + New project
         </Button>
