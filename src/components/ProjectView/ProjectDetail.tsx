@@ -31,7 +31,7 @@ export function ProjectDetail({ projectId, onClose }: ProjectDetailProps) {
       {/* Header */}
       <div
         className="rounded-sm p-4 mb-4"
-        style={{ background: `linear-gradient(135deg, ${color.light}, ${color.base}44)` }}
+        style={{ background: color.light }}
       >
         <div className="flex items-start justify-between">
           <div>
@@ -82,7 +82,7 @@ export function ProjectDetail({ projectId, onClose }: ProjectDetailProps) {
       {/* Sub-tasks */}
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-semibold text-gray-700 dark:text-gray-300">Tasks</h3>
-        <Button size="sm" variant="primary" onClick={() => setShowAddTask(true)}>
+        <Button size="xl" variant="primary" onClick={() => setShowAddTask(true)}>
           + Add task
         </Button>
       </div>
@@ -99,7 +99,7 @@ export function ProjectDetail({ projectId, onClose }: ProjectDetailProps) {
       <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
         <Button
           variant="danger"
-          size="sm"
+          size="xl"
           onClick={async () => {
             if (confirm('Delete this project? Tasks will remain but be unlinked.')) {
               await deleteProject(project.id);

@@ -17,7 +17,8 @@ const DIFFICULTY_LABELS = ['', 'Easy', 'Medium', 'Hard', 'Very Hard', 'Expert'];
 
 const INPUT_STYLE = { paddingLeft: '1rem' } as const;
 const LABEL_STYLE = { paddingLeft: '1rem' } as const;
-const SELECT_STYLE = { paddingLeft: '1rem', paddingTop: '1rem', paddingBottom: '1rem' } as const;
+const SELECT_STYLE = { paddingLeft: '1rem', paddingTop: '0.5rem', paddingBottom: '0.5rem' } as const;
+const DATE_STYLE = { paddingLeft: '1rem', paddingTop: '0.5rem', paddingBottom: '0.5rem' } as const;
 
 export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
   const { addTask, updateTask, projects, currentDate } = useStore();
@@ -83,8 +84,8 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder="What needs to be done?"
-          className="w-full pl-4 pr-4 py-4 rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50 text-base"
-          style={INPUT_STYLE}
+          className="w-full pl-4 pr-4 rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50 text-base"
+          style={DATE_STYLE}
           autoFocus
         />
       </div>
@@ -198,8 +199,8 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
             type="date"
             value={dueDate}
             onChange={e => setDueDate(e.target.value)}
-            className="w-full pl-4 pr-4 py-4 rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
-            style={INPUT_STYLE}
+            className="w-full pl-4 pr-4 rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
+            style={DATE_STYLE}
           />
         </div>
         <div>
@@ -211,8 +212,8 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
             type="date"
             value={startDate}
             onChange={e => setStartDate(e.target.value)}
-            className="w-full pl-4 pr-4 py-4 rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
-            style={INPUT_STYLE}
+            className="w-full pl-4 pr-4 rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
+            style={DATE_STYLE}
           />
         </div>
       </div>
@@ -247,8 +248,8 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
           <select
             value={parentProjectId}
             onChange={e => setParentProjectId(e.target.value)}
-            className="w-full pl-4 pr-4 py-4 rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
-            style={INPUT_STYLE}
+            className="w-full pl-4 pr-4 rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
+            style={DATE_STYLE}
           >
             <option value="">No project</option>
             {projects.map(p => (
@@ -297,17 +298,17 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
           onChange={e => setTagInput(e.target.value)}
           onKeyDown={handleAddTag}
           placeholder="Type a tag and press Enter..."
-          className="w-full pl-4 pr-4 py-4 rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
-          style={INPUT_STYLE}
+          className="w-full pl-4 pr-4 rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
+          style={DATE_STYLE}
         />
       </div>
 
       {/* Submit */}
-      <div className="flex gap-3 pt-3">
-        <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
+      <div className="flex gap-3 pt-12">
+        <Button type="button" variant="secondary" onClick={onClose} className="flex-1" style={DATE_STYLE}>
           Cancel
         </Button>
-        <Button type="submit" variant="primary" className="flex-1">
+        <Button type="submit" variant="primary" className="flex-1" style={DATE_STYLE}>
           {editTask ? 'Save changes' : 'Add task'}
         </Button>
       </div>

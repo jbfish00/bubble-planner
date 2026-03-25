@@ -21,19 +21,21 @@ interface PhysicsNode {
 type PositionMap = Map<string, { x: number; y: number }>;
 
 const PADDING = 16;
-const TARGET_SPEED = 0.6;
-const MAX_SPEED = 1.4;
-const MIN_SPEED = 0.25;
+const TARGET_SPEED = 0.25;
+const MAX_SPEED = 0.5;
+const MIN_SPEED = 0.08;
 
-function tickPhysics(nodes: PhysicsNode[], width: number, height: number) {
-  // Update positions
+function tickPhysics(nodes: PhysicsNode[], width: number, height: number, draggedId?: string) {
+  // Update positions (skip dragged node)
   for (const n of nodes) {
+    if (n.id === draggedId) continue;
     n.x += n.vx;
     n.y += n.vy;
   }
 
-  // Wall bounce
+  // Wall bounce (skip dragged node)
   for (const n of nodes) {
+    if (n.id === draggedId) continue;
     const edge = n.r + PADDING;
     if (n.x < edge) { n.x = edge; n.vx = Math.abs(n.vx); }
     else if (n.x > width - edge) { n.x = width - edge; n.vx = -Math.abs(n.vx); }
@@ -41,7 +43,7 @@ function tickPhysics(nodes: PhysicsNode[], width: number, height: number) {
     else if (n.y > height - edge) { n.y = height - edge; n.vy = -Math.abs(n.vy); }
   }
 
-  // Bubble-bubble collision (elastic)
+  // Bubble-bubble collision (elastic with mass) — includes dragged node so it pushes others
   for (let i = 0; i < nodes.length; i++) {
     for (let j = i + 1; j < nodes.length; j++) {
       const a = nodes[i];
@@ -54,33 +56,39 @@ function tickPhysics(nodes: PhysicsNode[], width: number, height: number) {
         const dist = Math.sqrt(distSq);
         const nx = dx / dist;
         const ny = dy / dist;
-        // Push apart
-        const overlap = (minDist - dist) * 0.5;
-        a.x -= nx * overlap;
-        a.y -= ny * overlap;
-        b.x += nx * overlap;
-        b.y += ny * overlap;
-        // Reflect velocities along collision normal
-        const dvx = a.vx - b.vx;
-        const dvy = a.vy - b.vy;
-        const dot = dvx * nx + dvy * ny;
-        if (dot > 0) {
-          a.vx -= dot * nx;
-          a.vy -= dot * ny;
-          b.vx += dot * nx;
-          b.vy += dot * ny;
+
+        // Separate overlapping bubbles (weighted by mass so heavy ones move less)
+        const ma = a.r * a.r;
+        const mb = b.r * b.r;
+        const totalMass = ma + mb;
+        const overlap = minDist - dist;
+        if (a.id !== draggedId) { a.x -= nx * overlap * (mb / totalMass); a.y -= ny * overlap * (mb / totalMass); }
+        if (b.id !== draggedId) { b.x += nx * overlap * (ma / totalMass); b.y += ny * overlap * (ma / totalMass); }
+
+        // Elastic collision velocity exchange along the collision normal
+        // Project velocities onto normal
+        const van = a.vx * nx + a.vy * ny;
+        const vbn = b.vx * nx + b.vy * ny;
+        // Only resolve if approaching
+        if (van - vbn > 0) {
+          const van2 = ((ma - mb) * van + 2 * mb * vbn) / totalMass;
+          const vbn2 = ((mb - ma) * vbn + 2 * ma * van) / totalMass;
+          const dvan = van2 - van;
+          const dvbn = vbn2 - vbn;
+          if (a.id !== draggedId) { a.vx += dvan * nx; a.vy += dvan * ny; }
+          if (b.id !== draggedId) { b.vx += dvbn * nx; b.vy += dvbn * ny; }
         }
       }
     }
   }
 
-  // Speed maintenance + random wander
+  // Speed maintenance + random wander (skip dragged node)
   for (const n of nodes) {
-    // Occasional gentle nudge
-    if (Math.random() < 0.004) {
+    if (n.id === draggedId) continue;
+    if (Math.random() < 0.003) {
       const angle = Math.random() * Math.PI * 2;
-      n.vx += Math.cos(angle) * 0.4;
-      n.vy += Math.sin(angle) * 0.4;
+      n.vx += Math.cos(angle) * 0.15;
+      n.vy += Math.sin(angle) * 0.15;
     }
     const speed = Math.sqrt(n.vx * n.vx + n.vy * n.vy);
     if (speed < MIN_SPEED) {
@@ -88,10 +96,23 @@ function tickPhysics(nodes: PhysicsNode[], width: number, height: number) {
       n.vx = Math.cos(angle) * TARGET_SPEED;
       n.vy = Math.sin(angle) * TARGET_SPEED;
     } else if (speed > MAX_SPEED) {
-      n.vx = (n.vx / speed) * MAX_SPEED;
-      n.vy = (n.vy / speed) * MAX_SPEED;
+      // Gradually decelerate rather than hard-cap, so throws feel smooth
+      n.vx *= 0.92;
+      n.vy *= 0.92;
     }
   }
+}
+
+const THROW_MAX_SPEED = 18;
+
+interface DragState {
+  id: string;
+  offsetX: number;
+  offsetY: number;
+  lastX: number;
+  lastY: number;
+  velX: number;
+  velY: number;
 }
 
 export function BubbleCanvas() {
@@ -101,6 +122,7 @@ export function BubbleCanvas() {
   const rafRef = useRef<number>(0);
   const sizeRef = useRef({ width: 0, height: 0 });
   const mountedRef = useRef(true);
+  const dragRef = useRef<DragState | null>(null);
 
   const { currentDate, setCurrentDate } = useStore();
   const allTasks = useStore(state => state.tasks);
@@ -115,7 +137,7 @@ export function BubbleCanvas() {
     if (!mountedRef.current) return;
     const { width, height } = sizeRef.current;
     if (width > 0 && height > 0 && nodesRef.current.length > 0) {
-      tickPhysics(nodesRef.current, width, height);
+      tickPhysics(nodesRef.current, width, height, dragRef.current?.id);
       const map: PositionMap = new Map();
       for (const n of nodesRef.current) map.set(n.id, { x: n.x, y: n.y });
       setPositions(map);
@@ -130,7 +152,7 @@ export function BubbleCanvas() {
     nodesRef.current = newTasks.map(task => {
       const r = getBubbleRadius(task);
       const angle = Math.random() * Math.PI * 2;
-      const speed = TARGET_SPEED + Math.random() * 0.3;
+      const speed = TARGET_SPEED + Math.random() * 0.15;
       return {
         id: task.id,
         r,
@@ -145,6 +167,55 @@ export function BubbleCanvas() {
       rafRef.current = requestAnimationFrame(loop);
     }
   }, [loop]);
+
+  // Drag handlers
+  const handleDragStart = useCallback((id: string, clientX: number, clientY: number) => {
+    const container = containerRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const node = nodesRef.current.find(n => n.id === id);
+    if (!node) return;
+    const cx = clientX - rect.left;
+    const cy = clientY - rect.top;
+    node.vx = 0;
+    node.vy = 0;
+    dragRef.current = { id, offsetX: cx - node.x, offsetY: cy - node.y, lastX: cx, lastY: cy, velX: 0, velY: 0 };
+  }, []);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    const container = containerRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const cx = e.clientX - rect.left;
+    const cy = e.clientY - rect.top;
+    drag.velX = cx - drag.lastX;
+    drag.velY = cy - drag.lastY;
+    drag.lastX = cx;
+    drag.lastY = cy;
+    const node = nodesRef.current.find(n => n.id === drag.id);
+    if (node) {
+      node.x = cx - drag.offsetX;
+      node.y = cy - drag.offsetY;
+      node.vx = 0;
+      node.vy = 0;
+    }
+  }, []);
+
+  const handlePointerUp = useCallback(() => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    const node = nodesRef.current.find(n => n.id === drag.id);
+    if (node) {
+      // Release with throw velocity, capped at THROW_MAX_SPEED
+      const speed = Math.sqrt(drag.velX ** 2 + drag.velY ** 2);
+      const scale = speed > THROW_MAX_SPEED ? THROW_MAX_SPEED / speed : 1;
+      node.vx = drag.velX * scale;
+      node.vy = drag.velY * scale;
+    }
+    dragRef.current = null;
+  }, []);
 
   // Restart simulation when tasks change
   const tasksRef = useRef(tasks);
@@ -181,10 +252,14 @@ export function BubbleCanvas() {
     };
   }, []);
 
-  // Swipe to change day
+  // Swipe to change day (only when not dragging a bubble)
   const touchStartX = useRef(0);
-  const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (dragRef.current) return;
+    touchStartX.current = e.touches[0].clientX;
+  };
   const handleTouchEnd = (e: React.TouchEvent) => {
+    if (dragRef.current) return;
     const diff = touchStartX.current - e.changedTouches[0].clientX;
     if (Math.abs(diff) > 60) {
       setCurrentDate(toISODate(addDays(parseISO(currentDate), diff > 0 ? 1 : -1)));
@@ -198,6 +273,9 @@ export function BubbleCanvas() {
       <div
         ref={containerRef}
         className="flex-1 relative overflow-hidden"
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
@@ -219,6 +297,8 @@ export function BubbleCanvas() {
                   x={pos.x}
                   y={pos.y}
                   r={getBubbleRadius(task)}
+                  onDragStart={handleDragStart}
+                  dragRef={dragRef}
                 />
               );
             })}

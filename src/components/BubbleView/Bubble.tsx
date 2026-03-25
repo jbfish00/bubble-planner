@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Task } from '../../types';
 import { BUBBLE_COLORS } from '../../constants/colors';
@@ -10,6 +10,8 @@ interface BubbleProps {
   x: number;
   y: number;
   r: number;
+  onDragStart: (id: string, clientX: number, clientY: number) => void;
+  dragRef: React.RefObject<{ id: string } | null>;
 }
 
 const urgencyColors = {
@@ -19,16 +21,17 @@ const urgencyColors = {
   none: 'transparent',
 };
 
-export function Bubble({ task, x, y, r }: BubbleProps) {
+export function Bubble({ task, x, y, r, onDragStart, dragRef }: BubbleProps) {
   const { setSelectedTask, completeTask } = useStore();
   const [completing, setCompleting] = useState(false);
+  const pointerDownPos = useRef<{ x: number; y: number } | null>(null);
 
   const color = BUBBLE_COLORS[task.colorIndex % BUBBLE_COLORS.length];
   const urgency = getUrgency(task);
   const urgencyColor = urgencyColors[urgency];
   const diameter = r * 2;
 
-  const handleComplete = async (e: React.MouseEvent) => {
+  const handleComplete = (e: React.MouseEvent) => {
     e.stopPropagation();
     if ('vibrate' in navigator) navigator.vibrate(30);
     setCompleting(true);
@@ -37,15 +40,33 @@ export function Bubble({ task, x, y, r }: BubbleProps) {
     }, 400);
   };
 
-  // Font size scales with bubble radius, minimum 13px for readability
+  const handlePointerDown = (e: React.PointerEvent) => {
+    // Don't interfere with the complete button
+    if ((e.target as HTMLElement).closest('button')) return;
+    e.stopPropagation();
+    pointerDownPos.current = { x: e.clientX, y: e.clientY };
+    onDragStart(task.id, e.clientX, e.clientY);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!pointerDownPos.current) return;
+    const dx = e.clientX - pointerDownPos.current.x;
+    const dy = e.clientY - pointerDownPos.current.y;
+    // If barely moved, treat as a tap → open task detail
+    if (Math.sqrt(dx * dx + dy * dy) < 8 && dragRef.current?.id === task.id) {
+      setSelectedTask(task.id);
+    }
+    pointerDownPos.current = null;
+  };
+
+  // Font size scales with bubble radius
   const fontSize = Math.max(13, Math.min(18, r / 2.8));
   const subFontSize = Math.max(11, fontSize - 3);
-
-  // Inner text area is ~65% of diameter to stay within the circle
   const textWidth = Math.floor(diameter * 0.65);
 
+  const isDragged = dragRef.current?.id === task.id;
+
   return (
-    // Outer div: physics-driven position (GPU-accelerated via transform)
     <div
       className="absolute"
       style={{
@@ -55,19 +76,21 @@ export function Bubble({ task, x, y, r }: BubbleProps) {
         top: 0,
         left: 0,
         willChange: 'transform',
+        cursor: isDragged ? 'grabbing' : 'grab',
+        zIndex: isDragged ? 10 : 1,
       }}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
     >
       <AnimatePresence>
         {!completing && (
           <motion.div
-            className="absolute inset-0 cursor-pointer select-none rounded-full"
+            className="absolute inset-0 select-none rounded-full"
             initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+            animate={{ scale: isDragged ? 1.08 : 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
-            whileHover={{ scale: 1.07 }}
-            whileTap={{ scale: 0.93 }}
+            whileHover={{ scale: isDragged ? 1.08 : 1.07 }}
             transition={{ type: 'spring', stiffness: 280, damping: 22 }}
-            onClick={() => setSelectedTask(task.id)}
           >
             {/* Urgency ring */}
             {urgency !== 'none' && (
@@ -85,7 +108,9 @@ export function Bubble({ task, x, y, r }: BubbleProps) {
               style={{
                 inset: urgency !== 'none' ? 4 : 0,
                 background: `radial-gradient(circle at 32% 32%, ${color.light}, ${color.base})`,
-                boxShadow: `0 6px 20px ${color.base}55, inset 0 2px 0 rgba(255,255,255,0.55)`,
+                boxShadow: isDragged
+                  ? `0 12px 32px ${color.base}88, inset 0 2px 0 rgba(255,255,255,0.55)`
+                  : `0 6px 20px ${color.base}55, inset 0 2px 0 rgba(255,255,255,0.55)`,
               }}
             >
               {/* Glass shine */}
@@ -100,7 +125,7 @@ export function Bubble({ task, x, y, r }: BubbleProps) {
                 }}
               />
 
-              {/* Task name — dark for strong contrast */}
+              {/* Task name */}
               <span
                 className="relative z-10 font-bold text-gray-800 leading-tight text-center break-words"
                 style={{ fontSize: `${fontSize}px`, width: textWidth, maxWidth: textWidth }}

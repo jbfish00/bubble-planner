@@ -96,6 +96,8 @@ export function ProjectBubble({ project, x, y, r, subTasks }: ProjectBubbleProps
             x={r + subX}
             y={r + subY}
             r={subR}
+            onDragStart={() => {}}
+            dragRef={{ current: null }}
           />
         );
       })}
