@@ -66,7 +66,7 @@ export function ProjectForm({ editProject, onClose }: ProjectFormProps) {
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder="Project name..."
-          className="w-full px-3 py-2.5 rounded-none border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50 text-sm"
+          className="w-full px-3 py-2.5 rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50 text-sm"
           autoFocus
           required
         />
@@ -81,7 +81,7 @@ export function ProjectForm({ editProject, onClose }: ProjectFormProps) {
           onChange={e => setDescription(e.target.value)}
           placeholder="Optional description..."
           rows={2}
-          className="w-full px-3 py-2.5 rounded-none border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50 text-sm resize-none"
+          className="w-full px-3 py-2.5 rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50 text-sm resize-none"
         />
       </div>
 
@@ -94,7 +94,7 @@ export function ProjectForm({ editProject, onClose }: ProjectFormProps) {
             type="date"
             value={startDate}
             onChange={e => setStartDate(e.target.value)}
-            className="w-full px-3 py-2 rounded-none border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
+            className="w-full px-3 py-2 rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
           />
         </div>
         <div>
@@ -106,7 +106,7 @@ export function ProjectForm({ editProject, onClose }: ProjectFormProps) {
             value={dueDate}
             onChange={e => setDueDate(e.target.value)}
             required
-            className="w-full px-3 py-2 rounded-none border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
+            className="w-full px-3 py-2 rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
           />
         </div>
       </div>
@@ -146,7 +146,7 @@ export function ProjectForm({ editProject, onClose }: ProjectFormProps) {
           onChange={e => setTagInput(e.target.value)}
           onKeyDown={handleAddTag}
           placeholder="Type tag and press Enter..."
-          className="w-full px-3 py-2 rounded-none border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
+          className="w-full px-3 py-2 rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
         />
       </div>
 

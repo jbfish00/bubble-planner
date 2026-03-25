@@ -35,7 +35,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
             onClick={onClose}
           />
           <motion.div
-            className="relative w-full sm:max-w-2xl bg-white dark:bg-gray-900 rounded-none shadow-2xl max-h-[90vh] overflow-y-auto"
+            className="relative w-full sm:max-w-2xl bg-white dark:bg-gray-900 rounded-sm shadow-2xl max-h-[90vh] overflow-y-auto"
             initial={{ y: '100%', opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}

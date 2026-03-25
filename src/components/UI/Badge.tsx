@@ -9,8 +9,8 @@ interface BadgeProps {
 export function Badge({ children, color = '#E8A598', onRemove }: BadgeProps) {
   return (
     <span
-      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
-      style={{ backgroundColor: color + 'aa', color: '#1f2937' }}
+      className="inline-flex items-center gap-1 rounded-full text-xs font-semibold"
+      style={{ backgroundColor: color + 'aa', color: '#1f2937', padding: '0.375rem 1rem' }}
     >
       {children}
       {onRemove && (

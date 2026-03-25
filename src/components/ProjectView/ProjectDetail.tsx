@@ -30,7 +30,7 @@ export function ProjectDetail({ projectId, onClose }: ProjectDetailProps) {
     <div>
       {/* Header */}
       <div
-        className="rounded-none p-4 mb-4"
+        className="rounded-sm p-4 mb-4"
         style={{ background: `linear-gradient(135deg, ${color.light}, ${color.base}44)` }}
       >
         <div className="flex items-start justify-between">

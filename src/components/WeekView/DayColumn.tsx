@@ -23,7 +23,7 @@ export function DayColumn({ dateStr, onClick }: DayColumnProps) {
 
   return (
     <motion.div
-      className={`flex-shrink-0 w-14 cursor-pointer rounded-none p-2 flex flex-col items-center gap-1 transition-colors ${
+      className={`flex-shrink-0 w-14 cursor-pointer rounded-sm p-2 flex flex-col items-center gap-1 transition-colors ${
         isSelected
           ? 'bg-[#E8A598]/20 ring-2 ring-[#E8A598]/50'
           : isToday

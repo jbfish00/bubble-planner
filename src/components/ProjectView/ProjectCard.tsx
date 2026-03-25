@@ -21,7 +21,7 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
 
   return (
     <motion.div
-      className="p-4 rounded-none shadow-sm cursor-pointer border border-gray-50 dark:border-gray-700"
+      className="p-4 rounded-sm shadow-sm cursor-pointer border border-gray-50 dark:border-gray-700"
       style={{ background: color.light }}
       whileHover={{ scale: 1.02, y: -2 }}
       whileTap={{ scale: 0.98 }}

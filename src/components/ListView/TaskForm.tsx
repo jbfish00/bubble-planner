@@ -15,7 +15,9 @@ const HOUR_CHIPS = [0.5, 1, 2, 4, 8, 16];
 const IMPORTANCE_LABELS = ['', 'Low', 'Medium', 'High', 'Critical', 'Urgent'];
 const DIFFICULTY_LABELS = ['', 'Easy', 'Medium', 'Hard', 'Very Hard', 'Expert'];
 
-const INPUT_STYLE = { paddingLeft: '1.5rem' } as const;
+const INPUT_STYLE = { paddingLeft: '1rem' } as const;
+const LABEL_STYLE = { paddingLeft: '1rem' } as const;
+const SELECT_STYLE = { paddingLeft: '1rem', paddingTop: '1rem', paddingBottom: '1rem' } as const;
 
 export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
   const { addTask, updateTask, projects, currentDate } = useStore();
@@ -72,7 +74,8 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* Name */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-2">
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+          style={LABEL_STYLE}>
           Task name
         </label>
         <input
@@ -80,7 +83,7 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder="What needs to be done?"
-          className="w-full pl-8 pr-6 py-4 rounded-none border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50 text-base"
+          className="w-full pl-4 pr-4 py-4 rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50 text-base"
           style={INPUT_STYLE}
           autoFocus
         />
@@ -88,7 +91,8 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-2">
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+          style={LABEL_STYLE}>
           Description
         </label>
         <textarea
@@ -96,14 +100,15 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
           onChange={e => setDescription(e.target.value)}
           placeholder="Optional notes..."
           rows={4}
-          className="w-full pl-8 pr-6 py-4 rounded-none border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50 text-base resize-none"
+          className="w-full pl-4 pr-4 py-4 rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50 text-base resize-none"
           style={INPUT_STYLE}
         />
       </div>
 
       {/* Importance */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-2">
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+          style={LABEL_STYLE}>
           Importance: <span className="text-[#E8A598]">{IMPORTANCE_LABELS[importance]}</span>
         </label>
         <div className="flex gap-2">
@@ -112,7 +117,7 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
               key={v}
               type="button"
               onClick={() => setImportance(v)}
-              className={`flex-1 py-3.5 rounded-none text-sm font-semibold transition-all ${
+              className={`flex-1 py-3.5 rounded-sm text-sm font-semibold transition-all ${
                 importance === v
                   ? 'bg-[#E8A598] text-white shadow-sm'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -126,7 +131,8 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
 
       {/* Difficulty */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-2">
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+          style={LABEL_STYLE}>
           Difficulty: <span className="text-[#98C5E8]">{DIFFICULTY_LABELS[difficulty]}</span>
         </label>
         <div className="flex gap-2">
@@ -135,7 +141,7 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
               key={v}
               type="button"
               onClick={() => setDifficulty(v)}
-              className={`flex-1 py-3.5 rounded-none text-sm font-semibold transition-all ${
+              className={`flex-1 py-3.5 rounded-sm text-sm font-semibold transition-all ${
                 difficulty === v
                   ? 'bg-[#98C5E8] text-white shadow-sm'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -149,7 +155,8 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
 
       {/* Estimated Hours */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-2">
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+          style={LABEL_STYLE}>
           Estimated time: <span className="text-[#A8D5A2]">{estimatedHours}h</span>
         </label>
         <div className="flex gap-2 flex-wrap">
@@ -158,11 +165,12 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
               key={h}
               type="button"
               onClick={() => setEstimatedHours(h)}
-              className={`px-5 py-3.5 rounded-none text-sm font-semibold transition-all ${
+              className={`rounded-sm text-sm font-semibold transition-all ${
                 estimatedHours === h
                   ? 'bg-[#A8D5A2] text-white shadow-sm'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
+              style={{ padding: '0.375rem 1rem' }}
             >
               {h === 0.5 ? '30m' : `${h}h`}
             </button>
@@ -174,7 +182,7 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
             step={0.25}
             value={estimatedHours}
             onChange={e => setEstimatedHours(parseFloat(e.target.value) || 1)}
-            className="w-24 pl-5 pr-3 py-4 rounded-none border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#A8D5A2]/50"
+            className="w-24 pl-5 pr-3 py-4 rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#A8D5A2]/50"
           />
         </div>
       </div>
@@ -182,26 +190,28 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
       {/* Dates */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-2">
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+          style={LABEL_STYLE}>
             Due date
           </label>
           <input
             type="date"
             value={dueDate}
             onChange={e => setDueDate(e.target.value)}
-            className="w-full pl-8 pr-6 py-4 rounded-none border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
+            className="w-full pl-4 pr-4 py-4 rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
             style={INPUT_STYLE}
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-2">
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+          style={LABEL_STYLE}>
             Start date
           </label>
           <input
             type="date"
             value={startDate}
             onChange={e => setStartDate(e.target.value)}
-            className="w-full pl-8 pr-6 py-4 rounded-none border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
+            className="w-full pl-4 pr-4 py-4 rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
             style={INPUT_STYLE}
           />
         </div>
@@ -209,14 +219,15 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
 
       {/* Recurrence */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-2">
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+          style={LABEL_STYLE}>
           Recurrence
         </label>
         <select
           value={recurrence ?? ''}
           onChange={e => setRecurrence((e.target.value || null) as Task['recurrence'])}
-          className="w-full pl-8 pr-6 py-4 rounded-none border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
-          style={INPUT_STYLE}
+          className="w-full pl-4 pr-4 rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
+          style={SELECT_STYLE}
         >
           <option value="">None</option>
           <option value="daily">Daily</option>
@@ -229,13 +240,14 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
       {/* Parent project */}
       {projects.length > 0 && (
         <div>
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-2">
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+          style={LABEL_STYLE}>
             Project
           </label>
           <select
             value={parentProjectId}
             onChange={e => setParentProjectId(e.target.value)}
-            className="w-full pl-8 pr-6 py-4 rounded-none border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
+            className="w-full pl-4 pr-4 py-4 rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
             style={INPUT_STYLE}
           >
             <option value="">No project</option>
@@ -248,7 +260,8 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
 
       {/* Color */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 pl-2">
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3"
+          style={LABEL_STYLE}>
           Color
         </label>
         <div className="flex gap-3 flex-wrap">
@@ -267,7 +280,8 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
 
       {/* Tags */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-2">
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+          style={LABEL_STYLE}>
           Tags
         </label>
         <div className="flex flex-wrap gap-2 mb-2">
@@ -283,7 +297,7 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
           onChange={e => setTagInput(e.target.value)}
           onKeyDown={handleAddTag}
           placeholder="Type a tag and press Enter..."
-          className="w-full pl-8 pr-6 py-4 rounded-none border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
+          className="w-full pl-4 pr-4 py-4 rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#E8A598]/50"
           style={INPUT_STYLE}
         />
       </div>

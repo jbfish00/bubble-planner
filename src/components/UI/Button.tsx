@@ -22,7 +22,7 @@ const sizes = {
 export function Button({ variant = 'primary', size = 'md', children, className = '', ...props }: ButtonProps) {
   return (
     <button
-      className={`rounded-none font-medium transition-all active:scale-95 ${variants[variant]} ${sizes[size]} ${className} disabled:opacity-50 disabled:cursor-not-allowed`}
+      className={`rounded-sm font-medium transition-all active:scale-95 ${variants[variant]} ${sizes[size]} ${className} disabled:opacity-50 disabled:cursor-not-allowed`}
       {...props}
     >
       {children}
