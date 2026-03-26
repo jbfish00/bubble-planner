@@ -6,7 +6,6 @@ import { BubbleCanvas } from './components/BubbleView/BubbleCanvas';
 import { TaskList } from './components/ListView/TaskList';
 import { ProjectList } from './components/ProjectView/ProjectList';
 import { WeekGrid } from './components/WeekView/WeekGrid';
-import { BottomNav } from './components/Navigation/BottomNav';
 import { TopBar } from './components/Navigation/TopBar';
 import { TaskDetail } from './components/UI/TaskDetail';
 import { AuthScreen } from './components/Auth/AuthScreen';
@@ -74,7 +73,6 @@ function App() {
           </motion.div>
         </AnimatePresence>
       </main>
-      <BottomNav />
       <TaskDetail />
     </div>
   );
