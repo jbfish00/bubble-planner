@@ -17,7 +17,7 @@ export function ProjectForm({ editProject, onClose }: ProjectFormProps) {
   const [description, setDescription] = useState(editProject?.description ?? '');
   const [startDate, setStartDate] = useState(editProject?.startDate ?? today());
   const [dueDate, setDueDate] = useState(editProject?.dueDate ?? '');
-  const [colorIndex, setColorIndex] = useState(editProject?.colorIndex ?? Math.floor(Math.random() * 10));
+  const [colorIndex, setColorIndex] = useState(() => editProject?.colorIndex ?? Math.floor(Math.random() * 10));
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>(editProject?.tags ?? []);
 
@@ -47,10 +47,11 @@ export function ProjectForm({ editProject, onClose }: ProjectFormProps) {
 
     if (editProject) {
       await updateProject(editProject.id, data);
+      onClose();
     } else {
-      await addProject(data);
+      const ok = await addProject(data);
+      if (ok) onClose();
     }
-    onClose();
   };
 
   const color = BUBBLE_COLORS[colorIndex % BUBBLE_COLORS.length];

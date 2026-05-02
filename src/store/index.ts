@@ -1,9 +1,16 @@
 import { create } from 'zustand';
 import type { User } from '@supabase/supabase-js';
-import type { Task, Project, ViewMode } from '../types';
+import type { Task, Project, ViewMode, SubscriptionTier, EnergyLevel } from '../types';
+import { FREE_TASK_LIMIT, FREE_PROJECT_LIMIT } from '../types';
 import { supabase } from '../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { today, isTaskOnDay } from '../utils/dateUtils';
+import {
+  scheduleTaskReminder,
+  cancelTaskReminder,
+  rescheduleAllReminders,
+} from '../lib/notifications';
+import { fetchSubscription } from '../lib/purchases';
 
 // --- Row ↔ Type mappers ---
 
@@ -101,6 +108,17 @@ interface AppStore {
   user: User | null;
   authLoading: boolean;
 
+  // Subscription state
+  subscriptionTier: SubscriptionTier;
+  upgradeModalReason: string | null;
+
+  // Energy state (Suggestion 4)
+  todayEnergy: EnergyLevel | null;
+  energyDate: string | null;
+
+  // AI Focus highlights (Suggestion 3)
+  focusedTaskIds: Set<string>;
+
   setUser: (user: User | null) => void;
   setAuthLoading: (loading: boolean) => void;
   signIn: (email: string, password: string) => Promise<string | null>;
@@ -108,11 +126,11 @@ interface AppStore {
   signOut: () => Promise<void>;
 
   loadData: () => Promise<void>;
-  addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => Promise<boolean>;
   updateTask: (id: string, updates: Partial<Task>) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   completeTask: (id: string) => Promise<void>;
-  addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => Promise<boolean>;
   updateProject: (id: string, updates: Partial<Project>) => Promise<void>;
   deleteProject: (id: string) => Promise<void>;
   setCurrentDate: (date: string) => void;
@@ -122,6 +140,19 @@ interface AppStore {
   toggleExpandProject: (id: string) => void;
   toggleDarkMode: () => void;
   getTasksForDay: (date: string) => Task[];
+
+  // Subscription actions
+  refreshSubscription: () => Promise<void>;
+  showUpgrade: (reason: string) => void;
+  hideUpgrade: () => void;
+
+  // Energy actions
+  setEnergy: (level: EnergyLevel) => void;
+  loadEnergyFromStorage: () => void;
+
+  // Focus highlight actions
+  setFocusedTaskIds: (ids: string[]) => void;
+  clearFocusedTaskIds: () => void;
 }
 
 export const useStore = create<AppStore>((set, get) => ({
@@ -135,6 +166,11 @@ export const useStore = create<AppStore>((set, get) => ({
   isDarkMode: false,
   user: null,
   authLoading: true,
+  subscriptionTier: 'free',
+  upgradeModalReason: null,
+  todayEnergy: null,
+  energyDate: null,
+  focusedTaskIds: new Set<string>(),
 
   setUser: (user) => set({ user }),
   setAuthLoading: (authLoading) => set({ authLoading }),
@@ -151,29 +187,70 @@ export const useStore = create<AppStore>((set, get) => ({
 
   signOut: async () => {
     await supabase.auth.signOut();
-    set({ user: null, tasks: [], projects: [] });
-  },
-
-  loadData: async () => {
-    const { user } = get();
-    if (!user) return;
-    const [{ data: tasks }, { data: projects }] = await Promise.all([
-      supabase.from('tasks').select('*').eq('user_id', user.id),
-      supabase.from('projects').select('*').eq('user_id', user.id),
-    ]);
+    // Clear ALL session state so the next user doesn't see leftover data.
+    // (Energy + Focus suggestions are tied to the previous user's tasks/profile.)
+    try {
+      localStorage.removeItem('bp_energy');
+    } catch {
+      // localStorage unavailable — already at default in-memory state
+    }
     set({
-      tasks: (tasks ?? []).map(rowToTask),
-      projects: (projects ?? []).map(rowToProject),
+      user: null,
+      tasks: [],
+      projects: [],
+      subscriptionTier: 'free',
+      todayEnergy: null,
+      energyDate: null,
+      focusedTaskIds: new Set<string>(),
+      upgradeModalReason: null,
+      selectedTaskId: null,
+      selectedProjectId: null,
+      expandedProjectIds: new Set<string>(),
     });
   },
 
+  loadData: async () => {
+    const initialUserId = get().user?.id;
+    if (!initialUserId) return;
+    const [{ data: tasks }, { data: projects }, sub] = await Promise.all([
+      supabase.from('tasks').select('*').eq('user_id', initialUserId),
+      supabase.from('projects').select('*').eq('user_id', initialUserId),
+      fetchSubscription(initialUserId).catch(() => ({ tier: 'free' as SubscriptionTier, expiresAt: null, provider: null })),
+    ]);
+    // Guard: if the user signed out or switched accounts during the fetch,
+    // discard this response — otherwise we'd repopulate cleared state with
+    // the previous user's data.
+    if (get().user?.id !== initialUserId) return;
+    const taskList = (tasks ?? []).map(rowToTask);
+    set({
+      tasks: taskList,
+      projects: (projects ?? []).map(rowToProject),
+      subscriptionTier: sub.tier,
+    });
+    rescheduleAllReminders(taskList).catch(() => {});
+  },
+
   addTask: async (taskData) => {
-    const { user } = get();
-    if (!user) return;
+    const { user, tasks, subscriptionTier } = get();
+    if (!user) return false;
+
+    // Enforce free-tier limit: count active (non-completed) tasks
+    if (subscriptionTier === 'free') {
+      const activeCount = tasks.filter(t => !t.isCompleted).length;
+      if (activeCount >= FREE_TASK_LIMIT) {
+        set({
+          upgradeModalReason: `Free accounts are capped at ${FREE_TASK_LIMIT} active tasks. Upgrade to Pro for unlimited tasks.`,
+        });
+        return false;
+      }
+    }
+
     const now = new Date().toISOString();
     const task: Task = { ...taskData, id: uuidv4(), createdAt: now, updatedAt: now };
     await supabase.from('tasks').insert(taskToRow(task, user.id));
     set(state => ({ tasks: [...state.tasks, task] }));
+    scheduleTaskReminder(task).catch(() => {});
+    return true;
   },
 
   updateTask: async (id, updates) => {
@@ -197,11 +274,17 @@ export const useStore = create<AppStore>((set, get) => ({
     set(state => ({
       tasks: state.tasks.map(t => t.id === id ? { ...t, ...updates, updatedAt: now } : t),
     }));
+    const updated = get().tasks.find(t => t.id === id);
+    if (updated) {
+      cancelTaskReminder(id).catch(() => {});
+      if (!updated.isCompleted) scheduleTaskReminder(updated).catch(() => {});
+    }
   },
 
   deleteTask: async (id) => {
     await supabase.from('tasks').delete().eq('id', id);
     set(state => ({ tasks: state.tasks.filter(t => t.id !== id) }));
+    cancelTaskReminder(id).catch(() => {});
   },
 
   completeTask: async (id) => {
@@ -216,15 +299,28 @@ export const useStore = create<AppStore>((set, get) => ({
         t.id === id ? { ...t, isCompleted: true, completedDate: now, updatedAt: now } : t
       ),
     }));
+    cancelTaskReminder(id).catch(() => {});
   },
 
   addProject: async (projectData) => {
-    const { user } = get();
-    if (!user) return;
+    const { user, projects, subscriptionTier } = get();
+    if (!user) return false;
+
+    if (subscriptionTier === 'free') {
+      const activeCount = projects.filter(p => !p.isCompleted).length;
+      if (activeCount >= FREE_PROJECT_LIMIT) {
+        set({
+          upgradeModalReason: `Free accounts are capped at ${FREE_PROJECT_LIMIT} active projects. Upgrade to Pro for unlimited projects.`,
+        });
+        return false;
+      }
+    }
+
     const now = new Date().toISOString();
     const project: Project = { ...projectData, id: uuidv4(), createdAt: now, updatedAt: now };
     await supabase.from('projects').insert(projectToRow(project, user.id));
     set(state => ({ projects: [...state.projects, project] }));
+    return true;
   },
 
   updateProject: async (id, updates) => {
@@ -268,4 +364,40 @@ export const useStore = create<AppStore>((set, get) => ({
   }),
 
   getTasksForDay: (date) => get().tasks.filter(task => isTaskOnDay(task, date)),
+
+  refreshSubscription: async () => {
+    const { user } = get();
+    if (!user) return;
+    const sub = await fetchSubscription(user.id);
+    set({ subscriptionTier: sub.tier });
+  },
+
+  showUpgrade: (reason) => set({ upgradeModalReason: reason }),
+  hideUpgrade: () => set({ upgradeModalReason: null }),
+
+  setEnergy: (level) => {
+    const t = today();
+    set({ todayEnergy: level, energyDate: t });
+    try {
+      localStorage.setItem('bp_energy', JSON.stringify({ date: t, level }));
+    } catch {
+      // localStorage unavailable (private mode) — energy persists in-memory only
+    }
+  },
+
+  loadEnergyFromStorage: () => {
+    try {
+      const raw = localStorage.getItem('bp_energy');
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { date: string; level: EnergyLevel };
+      if (parsed.date === today()) {
+        set({ todayEnergy: parsed.level, energyDate: parsed.date });
+      }
+    } catch {
+      // ignore
+    }
+  },
+
+  setFocusedTaskIds: (ids) => set({ focusedTaskIds: new Set(ids) }),
+  clearFocusedTaskIds: () => set({ focusedTaskIds: new Set() }),
 }));

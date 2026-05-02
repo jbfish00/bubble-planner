@@ -31,7 +31,7 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
   const [startDate, setStartDate] = useState(editTask?.startDate ?? '');
   const [recurrence, setRecurrence] = useState<Task['recurrence']>(editTask?.recurrence ?? null);
   const [parentProjectId, setParentProjectId] = useState(editTask?.parentProjectId ?? '');
-  const [colorIndex, setColorIndex] = useState(editTask?.colorIndex ?? Math.floor(Math.random() * 10));
+  const [colorIndex, setColorIndex] = useState(() => editTask?.colorIndex ?? Math.floor(Math.random() * 10));
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>(editTask?.tags ?? []);
 
@@ -65,10 +65,12 @@ export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
 
     if (editTask) {
       await updateTask(editTask.id, taskData);
+      onClose();
     } else {
-      await addTask(taskData);
+      const ok = await addTask(taskData);
+      if (ok) onClose();
+      // If blocked by free-tier limit, the upgrade modal will appear; leave the form open
     }
-    onClose();
   };
 
   return (

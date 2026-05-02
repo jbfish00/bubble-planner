@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useStore } from '../../store';
 import { Modal } from '../UI/Modal';
 import { TaskForm } from '../ListView/TaskForm';
+import { WeeklyReport } from '../UI/WeeklyReport';
+import { calculateStreak } from '../../utils/streakUtils';
 import type { ViewMode } from '../../types';
 
 const BubbleIcon = () => (
@@ -47,8 +49,13 @@ const views: { mode: ViewMode; label: string; icon: React.ReactNode }[] = [
 ];
 
 export function TopBar() {
-  const { isDarkMode, toggleDarkMode, viewMode, setViewMode } = useStore();
+  const { isDarkMode, toggleDarkMode, viewMode, setViewMode, tasks, subscriptionTier } = useStore();
   const [showAdd, setShowAdd] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const streak = useMemo(
+    () => calculateStreak(tasks, subscriptionTier === 'pro'),
+    [tasks, subscriptionTier],
+  );
 
   return (
     <>
@@ -103,8 +110,27 @@ export function TopBar() {
           })}
         </div>
 
-        {/* Right: dark mode + add */}
+        {/* Right: streak + dark mode + add */}
         <div className="flex items-center gap-2 flex-shrink-0">
+          {streak > 0 && (
+            <motion.button
+              key={streak}
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              whileTap={{ scale: 0.9 }}
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+              onClick={() => setShowReport(true)}
+              className="h-8 px-2.5 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/40 dark:to-orange-800/40 flex items-center gap-1 text-sm font-bold text-orange-700 dark:text-orange-300"
+              style={{ touchAction: 'manipulation' }}
+              aria-label="View weekly report"
+              title={`${streak}-day streak — tap for weekly report`}
+            >
+              <span>🔥</span>
+              <span className="leading-none">{streak}</span>
+            </motion.button>
+          )}
+
           <motion.button
             className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-base hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             whileTap={{ scale: 0.9 }}
@@ -134,6 +160,8 @@ export function TopBar() {
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="New task">
         <TaskForm onClose={() => setShowAdd(false)} />
       </Modal>
+
+      <WeeklyReport isOpen={showReport} onClose={() => setShowReport(false)} />
     </>
   );
 }

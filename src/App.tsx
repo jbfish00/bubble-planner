@@ -9,9 +9,15 @@ import { WeekGrid } from './components/WeekView/WeekGrid';
 import { TopBar } from './components/Navigation/TopBar';
 import { TaskDetail } from './components/UI/TaskDetail';
 import { AuthScreen } from './components/Auth/AuthScreen';
+import { UpgradeModal } from './components/UI/UpgradeModal';
+import { requestNotificationPermission } from './lib/notifications';
+import { isNative } from './lib/platform';
 
 function App() {
-  const { loadData, viewMode, isDarkMode, user, authLoading, setUser, setAuthLoading } = useStore();
+  const {
+    loadData, viewMode, isDarkMode, user, authLoading, setUser, setAuthLoading,
+    upgradeModalReason, hideUpgrade, loadEnergyFromStorage,
+  } = useStore();
 
   // Listen for auth state changes
   useEffect(() => {
@@ -34,6 +40,18 @@ function App() {
   useEffect(() => {
     if (user) loadData();
   }, [user]);
+
+  // Request notification permission on native platforms
+  useEffect(() => {
+    if (user && isNative()) {
+      requestNotificationPermission().catch(() => {});
+    }
+  }, [user]);
+
+  // Hydrate today's energy level from localStorage on mount
+  useEffect(() => {
+    loadEnergyFromStorage();
+  }, [loadEnergyFromStorage]);
 
   const views = {
     daily: <BubbleCanvas />,
@@ -74,6 +92,11 @@ function App() {
         </AnimatePresence>
       </main>
       <TaskDetail />
+      <UpgradeModal
+        isOpen={upgradeModalReason !== null}
+        onClose={hideUpgrade}
+        reason={upgradeModalReason ?? undefined}
+      />
     </div>
   );
 }

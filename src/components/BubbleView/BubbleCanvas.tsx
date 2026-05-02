@@ -6,6 +6,8 @@ import { Bubble } from './Bubble';
 import { getBubbleRadius } from '../../utils/taskUtils';
 import { toISODate, isTaskOnDay } from '../../utils/dateUtils';
 import { DayNavigation } from './DayNavigation';
+import { FocusPanel } from './FocusPanel';
+import { EnergyCheckIn } from './EnergyCheckIn';
 import type { Task } from '../../types';
 
 interface PhysicsNode {
@@ -234,6 +236,8 @@ export function BubbleCanvas() {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
+        <FocusPanel />
+        <EnergyCheckIn />
         {tasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-10">
             <div className="text-7xl mb-5 opacity-20">○</div>

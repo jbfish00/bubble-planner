@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Task } from '../../types';
 import { BUBBLE_COLORS } from '../../constants/colors';
-import { getUrgency } from '../../utils/dateUtils';
+import { getUrgency, today } from '../../utils/dateUtils';
 import { useStore } from '../../store';
 
 interface BubbleProps {
@@ -23,7 +23,7 @@ const urgencyColors = {
 };
 
 export function Bubble({ task, x, y, r, onBubbleTouchStart }: BubbleProps) {
-  const { setSelectedTask, completeTask } = useStore();
+  const { setSelectedTask, completeTask, todayEnergy, focusedTaskIds, currentDate } = useStore();
   const [completing, setCompleting] = useState(false);
   const touchStartRef = useRef<{ time: number; x: number; y: number } | null>(null);
 
@@ -32,14 +32,32 @@ export function Bubble({ task, x, y, r, onBubbleTouchStart }: BubbleProps) {
   const urgencyColor = urgencyColors[urgency];
   const diameter = r * 2;
 
+  // Energy filter is "how I feel TODAY" — don't apply it when the user is
+  // browsing past or future days, otherwise planning becomes confusing.
+  const isViewingToday = currentDate === today();
+  const energyMismatch = isViewingToday && todayEnergy !== null && task.difficulty > todayEnergy;
+  const isFocused = focusedTaskIds?.has(task.id) ?? false;
+  const energyOpacity = energyMismatch ? 0.35 : 1;
+  const energyScale = energyMismatch ? 0.85 : 1;
+
   const handleComplete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if ('vibrate' in navigator) navigator.vibrate(30);
+    if ('vibrate' in navigator) navigator.vibrate([20, 40, 20]);
     setCompleting(true);
     setTimeout(async () => {
       await completeTask(task.id);
-    }, 400);
+    }, 700); // give the burst time to play
   };
+
+  // Particle burst — 12 colored droplets fly outward and fade
+  const particles = Array.from({ length: 12 }, (_, i) => {
+    const angle = (i / 12) * Math.PI * 2;
+    return {
+      i,
+      dx: Math.cos(angle) * (r + 30),
+      dy: Math.sin(angle) * (r + 30),
+    };
+  });
 
   // Touch events drive tap detection — most reliable on iOS/Android
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -88,11 +106,24 @@ export function Bubble({ task, x, y, r, onBubbleTouchStart }: BubbleProps) {
           <motion.div
             className="absolute inset-0 select-none rounded-full"
             initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+            animate={{ scale: energyScale, opacity: energyOpacity }}
             exit={{ scale: 0, opacity: 0 }}
-            whileHover={{ scale: 1.07 }}
+            whileHover={{ scale: energyScale * 1.07 }}
             transition={{ type: 'spring', stiffness: 280, damping: 22 }}
           >
+            {/* Focus highlight (AI Focus) */}
+            {isFocused && (
+              <motion.div
+                className="absolute rounded-full pointer-events-none"
+                style={{
+                  inset: -8,
+                  border: '3px solid #E8A598',
+                  boxShadow: '0 0 24px rgba(232, 165, 152, 0.7)',
+                }}
+                animate={{ opacity: [0.6, 1, 0.6] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
+            )}
             {/* Urgency ring */}
             {urgency !== 'none' && (
               <motion.div
@@ -154,6 +185,56 @@ export function Bubble({ task, x, y, r, onBubbleTouchStart }: BubbleProps) {
               </motion.button>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Particle burst on completion */}
+      <AnimatePresence>
+        {completing && (
+          <>
+            {/* Center flash */}
+            <motion.div
+              className="absolute rounded-full pointer-events-none"
+              style={{
+                left: r - 6,
+                top: r - 6,
+                width: 12,
+                height: 12,
+                background: 'white',
+                boxShadow: `0 0 20px ${color.base}`,
+              }}
+              initial={{ scale: 0, opacity: 1 }}
+              animate={{ scale: [0, 4, 8], opacity: [1, 0.6, 0] }}
+              transition={{ duration: 0.6 }}
+            />
+            {/* Confetti droplets */}
+            {particles.map(p => (
+              <motion.div
+                key={p.i}
+                className="absolute rounded-full pointer-events-none"
+                style={{
+                  left: r - 4,
+                  top: r - 4,
+                  width: 8,
+                  height: 8,
+                  background: `radial-gradient(circle at 32% 32%, ${color.light}, ${color.base})`,
+                }}
+                initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+                animate={{ x: p.dx, y: p.dy, opacity: 0, scale: 0.4 }}
+                transition={{ duration: 0.6, ease: 'easeOut' }}
+              />
+            ))}
+            {/* +1 floating points */}
+            <motion.div
+              className="absolute pointer-events-none font-extrabold text-base"
+              style={{ left: r - 14, top: r - 10, color: color.dark, textShadow: '0 1px 4px rgba(255,255,255,0.8)' }}
+              initial={{ y: 0, opacity: 0, scale: 0.5 }}
+              animate={{ y: -40, opacity: [0, 1, 1, 0], scale: [0.5, 1.1, 1, 1] }}
+              transition={{ duration: 0.7 }}
+            >
+              +1
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>

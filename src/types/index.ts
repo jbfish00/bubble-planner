@@ -33,3 +33,16 @@ export interface Project {
 }
 
 export type ViewMode = 'daily' | 'list' | 'projects' | 'week';
+
+export type SubscriptionTier = 'free' | 'pro';
+
+export type EnergyLevel = 1 | 2 | 3 | 4 | 5;
+
+export const FREE_TASK_LIMIT = 15;
+export const FREE_PROJECT_LIMIT = 3;
+export const FREE_AI_CALLS_PER_WEEK = 3;
+
+export interface FocusSuggestion {
+  taskId: string;
+  reason: string;
+}
