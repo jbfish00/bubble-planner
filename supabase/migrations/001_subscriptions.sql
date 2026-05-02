@@ -32,6 +32,31 @@ alter table public.ai_usage enable row level security;
 create policy "read own ai usage" on public.ai_usage
   for select using (auth.uid() = user_id);
 
+-- Atomic increment used by the daily-focus edge function to avoid the
+-- read-then-write race where two concurrent calls both read count=N and
+-- both write N+1. SECURITY DEFINER lets the service-role caller invoke
+-- it; the function performs the upsert in one statement.
+create or replace function public.increment_ai_usage(p_user_id uuid, p_week_start date)
+returns int
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  new_count int;
+begin
+  insert into public.ai_usage (user_id, week_start, call_count)
+  values (p_user_id, p_week_start, 1)
+  on conflict (user_id, week_start)
+  do update set call_count = public.ai_usage.call_count + 1
+  returning call_count into new_count;
+  return new_count;
+end;
+$$;
+
+revoke all on function public.increment_ai_usage(uuid, date) from public;
+grant execute on function public.increment_ai_usage(uuid, date) to service_role;
+
 -- Energy log (Pro feature: history + analytics)
 create table if not exists public.energy_logs (
   user_id uuid not null references auth.users (id) on delete cascade,

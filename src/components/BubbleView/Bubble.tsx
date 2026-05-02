@@ -23,7 +23,10 @@ const urgencyColors = {
 };
 
 export function Bubble({ task, x, y, r, onBubbleTouchStart }: BubbleProps) {
-  const { setSelectedTask, completeTask, todayEnergy, focusedTaskIds, currentDate } = useStore();
+  const {
+    setSelectedTask, completeTask,
+    todayEnergy, energyDate, focusedTaskIds, currentDate,
+  } = useStore();
   const [completing, setCompleting] = useState(false);
   const touchStartRef = useRef<{ time: number; x: number; y: number } | null>(null);
 
@@ -32,10 +35,13 @@ export function Bubble({ task, x, y, r, onBubbleTouchStart }: BubbleProps) {
   const urgencyColor = urgencyColors[urgency];
   const diameter = r * 2;
 
-  // Energy filter is "how I feel TODAY" — don't apply it when the user is
-  // browsing past or future days, otherwise planning becomes confusing.
-  const isViewingToday = currentDate === today();
-  const energyMismatch = isViewingToday && todayEnergy !== null && task.difficulty > todayEnergy;
+  // Energy filter is "how I feel TODAY" — only apply when viewing today AND
+  // the stored energy is actually from today (not stale from a session that
+  // crossed midnight).
+  const todayStr = today();
+  const energyIsCurrent = todayEnergy !== null && energyDate === todayStr;
+  const isViewingToday = currentDate === todayStr;
+  const energyMismatch = isViewingToday && energyIsCurrent && task.difficulty > (todayEnergy as number);
   const isFocused = focusedTaskIds?.has(task.id) ?? false;
   const energyOpacity = energyMismatch ? 0.35 : 1;
   const energyScale = energyMismatch ? 0.85 : 1;

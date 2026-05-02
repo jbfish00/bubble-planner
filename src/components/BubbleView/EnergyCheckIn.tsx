@@ -13,16 +13,24 @@ const levels: { level: EnergyLevel; label: string; emoji: string; color: string 
 ];
 
 export function EnergyCheckIn() {
-  const { todayEnergy, setEnergy, subscriptionTier, showUpgrade, currentDate } = useStore();
+  const {
+    todayEnergy, energyDate, setEnergy, subscriptionTier, showUpgrade, currentDate,
+  } = useStore();
   const [dismissed, setDismissed] = useState(false);
   const [showAdjuster, setShowAdjuster] = useState(false);
 
-  // Energy is a "today" feature — don't show it when browsing other days
-  if (currentDate !== today()) return null;
+  const todayStr = today();
 
-  // If user already set energy today, show a small pill (Pro feature)
-  if (todayEnergy !== null) {
-    const current = levels[todayEnergy - 1];
+  // Energy is a "today" feature — don't show it when browsing other days
+  if (currentDate !== todayStr) return null;
+
+  // If user already set energy AND it's actually for today, show the pill.
+  // (If energyDate is stale from a session that crossed midnight, fall
+  // through and re-prompt for fresh energy.)
+  const energyIsCurrent = todayEnergy !== null && energyDate === todayStr;
+
+  if (energyIsCurrent) {
+    const current = levels[(todayEnergy as number) - 1];
     return (
       <>
         <motion.button

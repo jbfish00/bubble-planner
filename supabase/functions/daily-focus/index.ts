@@ -101,17 +101,26 @@ serve(async (req: Request) => {
     const isPro = subRow?.tier === 'pro' &&
       (!subRow.expires_at || new Date(subRow.expires_at).getTime() > Date.now());
 
-    // Free-tier rate limit: 3 AI calls per ISO week
+    // Free-tier rate limit: 3 AI calls per ISO week.
+    // We increment FIRST (atomically) and check the post-increment count.
+    // This avoids the check-then-increment race where two concurrent
+    // requests both observe count=N and both proceed.
     const weekStart = isoWeekStart(new Date());
     if (!isPro) {
-      const { data: usageRow } = await admin
-        .from('ai_usage')
-        .select('call_count')
-        .eq('user_id', userId)
-        .eq('week_start', weekStart)
-        .maybeSingle();
-      const used = usageRow?.call_count ?? 0;
-      if (used >= FREE_AI_CALLS_PER_WEEK) {
+      const { data: newCount, error: rpcErr } = await admin.rpc(
+        'increment_ai_usage',
+        { p_user_id: userId, p_week_start: weekStart },
+      );
+      // CRITICAL: if the increment fails we must REFUSE the call.
+      // Letting it through would leak unlimited AI usage on a DB hiccup
+      // or a missing migration.
+      if (rpcErr || typeof newCount !== 'number') {
+        return new Response(
+          JSON.stringify({ error: 'usage_unavailable', detail: rpcErr?.message ?? 'increment failed' }),
+          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+      if (newCount > FREE_AI_CALLS_PER_WEEK) {
         return new Response(JSON.stringify({ error: 'rate_limit' }), {
           status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -163,25 +172,7 @@ serve(async (req: Request) => {
       .filter(s => validIds.has(s.taskId))
       .slice(0, 3);
 
-    // Increment usage counter for free users
-    if (!isPro) {
-      await admin.rpc('increment_ai_usage', { p_user_id: userId, p_week_start: weekStart })
-        .then(() => undefined)
-        .catch(async () => {
-          // Fallback: upsert manually if RPC doesn't exist
-          const { data: existing } = await admin
-            .from('ai_usage')
-            .select('call_count')
-            .eq('user_id', userId)
-            .eq('week_start', weekStart)
-            .maybeSingle();
-          await admin.from('ai_usage').upsert({
-            user_id: userId,
-            week_start: weekStart,
-            call_count: (existing?.call_count ?? 0) + 1,
-          });
-        });
-    }
+    // Usage was already incremented atomically above for free users.
 
     return new Response(JSON.stringify({ suggestions }), {
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },

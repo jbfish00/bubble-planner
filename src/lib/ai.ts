@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 import type { Task, FocusSuggestion } from '../types';
 
 export interface DailyFocusError {
-  code: 'rate_limit' | 'unauthorized' | 'network' | 'unknown';
+  code: 'rate_limit' | 'unauthorized' | 'network' | 'usage_unavailable' | 'unknown';
   message: string;
 }
 
@@ -36,6 +36,9 @@ export async function getDailyFocus(tasks: Task[], date: string): Promise<DailyF
     }
     if (status === 401 || status === 403) {
       return { ok: false, error: { code: 'unauthorized', message: 'Sign in again to use AI Focus.' } };
+    }
+    if (status === 503) {
+      return { ok: false, error: { code: 'usage_unavailable', message: "AI usage tracking is temporarily unavailable. Please try again in a moment." } };
     }
     return { ok: false, error: { code: 'network', message: error.message ?? 'Could not reach AI service' } };
   }
