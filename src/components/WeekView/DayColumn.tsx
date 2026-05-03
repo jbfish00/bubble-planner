@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { format, parseISO } from 'date-fns';
 import { useStore } from '../../store';
-import { BUBBLE_COLORS } from '../../constants/colors';
+import { useThemeColors } from '../../constants/colors';
 import { getBubbleRadius } from '../../utils/taskUtils';
 import { today } from '../../utils/dateUtils';
 
@@ -12,6 +12,7 @@ interface DayColumnProps {
 
 export function DayColumn({ dateStr, onClick }: DayColumnProps) {
   const { getTasksForDay, currentDate } = useStore();
+  const BUBBLE_COLORS = useThemeColors();
   const tasks = getTasksForDay(dateStr);
   const isToday = dateStr === today();
   const isSelected = dateStr === currentDate;

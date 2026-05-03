@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useStore } from '../../store';
-import { BUBBLE_COLORS } from '../../constants/colors';
+import { useThemeColors } from '../../constants/colors';
 import { formatDisplay } from '../../utils/dateUtils';
 import { TaskRow } from '../ListView/TaskRow';
 import { Modal } from '../UI/Modal';
 import { TaskForm } from '../ListView/TaskForm';
 import { Button } from '../UI/Button';
 import { Badge } from '../UI/Badge';
+import { ConfirmDialog } from '../UI/ConfirmDialog';
 
 interface ProjectDetailProps {
   projectId: string;
@@ -17,13 +18,15 @@ interface ProjectDetailProps {
 export function ProjectDetail({ projectId, onClose }: ProjectDetailProps) {
   const { projects, tasks, deleteProject } = useStore();
   const [showAddTask, setShowAddTask] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
+  const colors = useThemeColors();
   const project = projects.find(p => p.id === projectId);
   if (!project) return null;
 
   const subTasks = tasks.filter(t => t.parentProjectId === projectId);
   const completed = subTasks.filter(t => t.isCompleted).length;
-  const color = BUBBLE_COLORS[project.colorIndex % BUBBLE_COLORS.length];
+  const color = colors[project.colorIndex % colors.length];
   const progress = subTasks.length > 0 ? completed / subTasks.length : 0;
 
   return (
@@ -97,16 +100,7 @@ export function ProjectDetail({ projectId, onClose }: ProjectDetailProps) {
 
       {/* Delete project */}
       <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
-        <Button
-          variant="danger"
-          size="xl"
-          onClick={async () => {
-            if (confirm('Delete this project? Tasks will remain but be unlinked.')) {
-              await deleteProject(project.id);
-              onClose();
-            }
-          }}
-        >
+        <Button variant="danger" size="xl" onClick={() => setShowDeleteDialog(true)}>
           Delete project
         </Button>
       </div>
@@ -117,6 +111,41 @@ export function ProjectDetail({ projectId, onClose }: ProjectDetailProps) {
           editTask={undefined}
         />
       </Modal>
+
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        title="Delete project?"
+        message={
+          subTasks.length === 0
+            ? `"${project.name}" will be permanently deleted.`
+            : `"${project.name}" has ${subTasks.length} task${subTasks.length === 1 ? '' : 's'}. What should happen to ${subTasks.length === 1 ? 'it' : 'them'}?`
+        }
+        actions={
+          subTasks.length === 0
+            ? [
+                { label: 'Cancel', variant: 'secondary', onClick: () => {} },
+                {
+                  label: 'Delete',
+                  variant: 'danger',
+                  onClick: async () => { await deleteProject(project.id); onClose(); },
+                },
+              ]
+            : [
+                {
+                  label: 'Keep tasks (just remove the project)',
+                  variant: 'primary',
+                  onClick: async () => { await deleteProject(project.id, 'unlink'); onClose(); },
+                },
+                {
+                  label: `Delete project AND all ${subTasks.length} task${subTasks.length === 1 ? '' : 's'}`,
+                  variant: 'danger',
+                  onClick: async () => { await deleteProject(project.id, 'cascade'); onClose(); },
+                },
+                { label: 'Cancel', variant: 'secondary', onClick: () => {} },
+              ]
+        }
+      />
     </div>
   );
 }

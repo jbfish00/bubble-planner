@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Task } from '../../types';
-import { BUBBLE_COLORS } from '../../constants/colors';
+import { useThemeColors } from '../../constants/colors';
 import { getUrgency, formatDisplay } from '../../utils/dateUtils';
 import { useStore } from '../../store';
 import { Badge } from '../UI/Badge';
@@ -28,6 +28,7 @@ const urgencyColors = {
 
 export function TaskRow({ task }: TaskRowProps) {
   const { completeTask, deleteTask } = useStore();
+  const BUBBLE_COLORS = useThemeColors();
   const [showEdit, setShowEdit] = useState(false);
   const [completing, setCompleting] = useState(false);
 

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Task } from '../../types';
-import { BUBBLE_COLORS } from '../../constants/colors';
+import { useThemeColors } from '../../constants/colors';
 import { getUrgency, today } from '../../utils/dateUtils';
 import { useStore } from '../../store';
 
@@ -25,12 +25,13 @@ const urgencyColors = {
 export function Bubble({ task, x, y, r, onBubbleTouchStart }: BubbleProps) {
   const {
     setSelectedTask, completeTask,
-    todayEnergy, energyDate, focusedTaskIds, currentDate,
+    todayEnergy, energyDate, focusedTaskIds, currentDate, pomodoro,
   } = useStore();
   const [completing, setCompleting] = useState(false);
   const touchStartRef = useRef<{ time: number; x: number; y: number } | null>(null);
 
-  const color = BUBBLE_COLORS[task.colorIndex % BUBBLE_COLORS.length];
+  const colors = useThemeColors();
+  const color = colors[task.colorIndex % colors.length];
   const urgency = getUrgency(task);
   const urgencyColor = urgencyColors[urgency];
   const diameter = r * 2;
@@ -43,6 +44,7 @@ export function Bubble({ task, x, y, r, onBubbleTouchStart }: BubbleProps) {
   const isViewingToday = currentDate === todayStr;
   const energyMismatch = isViewingToday && energyIsCurrent && task.difficulty > (todayEnergy as number);
   const isFocused = focusedTaskIds?.has(task.id) ?? false;
+  const isPomodoroRunning = pomodoro?.taskId === task.id;
   const energyOpacity = energyMismatch ? 0.35 : 1;
   const energyScale = energyMismatch ? 0.85 : 1;
 
@@ -128,6 +130,20 @@ export function Bubble({ task, x, y, r, onBubbleTouchStart }: BubbleProps) {
                 }}
                 animate={{ opacity: [0.6, 1, 0.6] }}
                 transition={{ duration: 2, repeat: Infinity }}
+              />
+            )}
+
+            {/* Pomodoro pulse — slow heartbeat while a focus session runs */}
+            {isPomodoroRunning && (
+              <motion.div
+                className="absolute rounded-full pointer-events-none"
+                style={{
+                  inset: -14,
+                  border: `3px solid ${color.dark}`,
+                  boxShadow: `0 0 30px ${color.base}`,
+                }}
+                animate={{ scale: [1, 1.06, 1], opacity: [0.85, 0.4, 0.85] }}
+                transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
               />
             )}
             {/* Urgency ring */}

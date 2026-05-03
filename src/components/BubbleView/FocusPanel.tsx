@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../../store';
 import { getDailyFocus } from '../../lib/ai';
-import { BUBBLE_COLORS } from '../../constants/colors';
+import { useThemeColors } from '../../constants/colors';
 import { isTaskOnDay } from '../../utils/dateUtils';
 import type { FocusSuggestion } from '../../types';
 
@@ -18,6 +18,7 @@ export function FocusPanel() {
     tasks, currentDate, setSelectedTask, showUpgrade,
     setFocusedTaskIds, clearFocusedTaskIds,
   } = useStore();
+  const BUBBLE_COLORS = useThemeColors();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<FocusSuggestion[] | null>(null);

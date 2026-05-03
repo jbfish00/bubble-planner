@@ -3,7 +3,7 @@ import { useStore } from '../../store';
 import type { Project } from '../../types';
 import { Button } from '../UI/Button';
 import { Badge } from '../UI/Badge';
-import { BUBBLE_COLORS } from '../../constants/colors';
+import { useThemeColors } from '../../constants/colors';
 import { today } from '../../utils/dateUtils';
 
 interface ProjectFormProps {
@@ -20,6 +20,7 @@ export function ProjectForm({ editProject, onClose }: ProjectFormProps) {
   const [colorIndex, setColorIndex] = useState(() => editProject?.colorIndex ?? Math.floor(Math.random() * 10));
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>(editProject?.tags ?? []);
+  const BUBBLE_COLORS = useThemeColors();
 
   const handleAddTag = (e: React.KeyboardEvent) => {
     if ((e.key === 'Enter' || e.key === ',') && tagInput.trim()) {

@@ -1,16 +1,19 @@
 import { create } from 'zustand';
 import type { User } from '@supabase/supabase-js';
-import type { Task, Project, ViewMode, SubscriptionTier, EnergyLevel } from '../types';
-import { FREE_TASK_LIMIT, FREE_PROJECT_LIMIT } from '../types';
+import type { Task, Project, ViewMode, SubscriptionTier, EnergyLevel, Toast, TaskTemplate } from '../types';
+import { FREE_TASK_LIMIT, FREE_PROJECT_LIMIT, FREE_TEMPLATE_LIMIT } from '../types';
 import { supabase } from '../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { today, isTaskOnDay } from '../utils/dateUtils';
+import { addDays, addWeeks, addMonths, parseISO, isValid, differenceInDays } from 'date-fns';
+import { format as formatDate } from 'date-fns';
 import {
   scheduleTaskReminder,
   cancelTaskReminder,
   rescheduleAllReminders,
 } from '../lib/notifications';
 import { fetchSubscription } from '../lib/purchases';
+import { syncTaskCreate, syncTaskUpdate, syncTaskDelete } from '../lib/calendar';
 
 // --- Row ↔ Type mappers ---
 
@@ -32,6 +35,7 @@ function rowToTask(r: any): Task {
     tags: r.tags ?? [],
     recurrence: r.recurrence ?? undefined,
     assignedDays: r.assigned_days ?? undefined,
+    actualMinutes: r.actual_minutes ?? 0,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -55,6 +59,7 @@ function taskToRow(task: Task, userId: string) {
     tags: task.tags,
     recurrence: task.recurrence ?? null,
     assigned_days: task.assignedDays ?? null,
+    actual_minutes: task.actualMinutes ?? 0,
     created_at: task.createdAt,
     updated_at: task.updatedAt,
   };
@@ -74,6 +79,42 @@ function rowToProject(r: any): Project {
     tags: r.tags ?? [],
     createdAt: r.created_at,
     updatedAt: r.updated_at,
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rowToTemplate(r: any): TaskTemplate {
+  return {
+    id: r.id,
+    name: r.name,
+    description: r.description ?? undefined,
+    importance: r.importance,
+    difficulty: r.difficulty,
+    estimatedHours: r.estimated_hours,
+    colorIndex: r.color_index,
+    tags: r.tags ?? [],
+    recurrence: r.recurrence ?? undefined,
+    parentProjectId: r.parent_project_id ?? undefined,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+}
+
+function templateToRow(tmpl: TaskTemplate, userId: string) {
+  return {
+    id: tmpl.id,
+    user_id: userId,
+    name: tmpl.name,
+    description: tmpl.description ?? null,
+    importance: tmpl.importance,
+    difficulty: tmpl.difficulty,
+    estimated_hours: tmpl.estimatedHours,
+    color_index: tmpl.colorIndex,
+    tags: tmpl.tags,
+    recurrence: tmpl.recurrence ?? null,
+    parent_project_id: tmpl.parentProjectId ?? null,
+    created_at: tmpl.createdAt,
+    updated_at: tmpl.updatedAt,
   };
 }
 
@@ -99,6 +140,7 @@ function projectToRow(project: Project, userId: string) {
 interface AppStore {
   tasks: Task[];
   projects: Project[];
+  templates: TaskTemplate[];
   currentDate: string;
   viewMode: ViewMode;
   selectedTaskId: string | null;
@@ -119,6 +161,15 @@ interface AppStore {
   // AI Focus highlights (Suggestion 3)
   focusedTaskIds: Set<string>;
 
+  // Toast notifications (errors / info)
+  toasts: Toast[];
+
+  // Active bubble theme id (Pro users only get to pick non-default)
+  themeId: string;
+
+  // Pomodoro / focus session (Pro)
+  pomodoro: { taskId: string; startedAt: number } | null;
+
   setUser: (user: User | null) => void;
   setAuthLoading: (loading: boolean) => void;
   signIn: (email: string, password: string) => Promise<string | null>;
@@ -132,7 +183,12 @@ interface AppStore {
   completeTask: (id: string) => Promise<void>;
   addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => Promise<boolean>;
   updateProject: (id: string, updates: Partial<Project>) => Promise<void>;
-  deleteProject: (id: string) => Promise<void>;
+  deleteProject: (id: string, mode?: 'unlink' | 'cascade') => Promise<void>;
+
+  // Templates
+  addTemplate: (tmpl: Omit<TaskTemplate, 'id' | 'createdAt' | 'updatedAt'>) => Promise<boolean>;
+  deleteTemplate: (id: string) => Promise<void>;
+  instantiateTemplate: (templateId: string, dueDate: string) => Promise<boolean>;
   setCurrentDate: (date: string) => void;
   setViewMode: (mode: ViewMode) => void;
   setSelectedTask: (id: string | null) => void;
@@ -153,11 +209,24 @@ interface AppStore {
   // Focus highlight actions
   setFocusedTaskIds: (ids: string[]) => void;
   clearFocusedTaskIds: () => void;
+
+  // Toast actions
+  pushToast: (message: string, variant?: Toast['variant']) => void;
+  dismissToast: (id: string) => void;
+
+  // Theme actions
+  setTheme: (themeId: string) => void;
+  loadThemeFromStorage: () => void;
+
+  // Pomodoro actions
+  startPomodoro: (taskId: string) => void;
+  stopPomodoro: () => Promise<void>;
 }
 
 export const useStore = create<AppStore>((set, get) => ({
   tasks: [],
   projects: [],
+  templates: [],
   currentDate: today(),
   viewMode: 'daily',
   selectedTaskId: null,
@@ -171,6 +240,9 @@ export const useStore = create<AppStore>((set, get) => ({
   todayEnergy: null,
   energyDate: null,
   focusedTaskIds: new Set<string>(),
+  toasts: [],
+  themeId: 'coral',
+  pomodoro: null,
 
   setUser: (user) => set({ user }),
   setAuthLoading: (authLoading) => set({ authLoading }),
@@ -198,6 +270,7 @@ export const useStore = create<AppStore>((set, get) => ({
       user: null,
       tasks: [],
       projects: [],
+      templates: [],
       subscriptionTier: 'free',
       todayEnergy: null,
       energyDate: null,
@@ -206,15 +279,18 @@ export const useStore = create<AppStore>((set, get) => ({
       selectedTaskId: null,
       selectedProjectId: null,
       expandedProjectIds: new Set<string>(),
+      toasts: [],
+      pomodoro: null,
     });
   },
 
   loadData: async () => {
     const initialUserId = get().user?.id;
     if (!initialUserId) return;
-    const [{ data: tasks }, { data: projects }, sub] = await Promise.all([
+    const [{ data: tasks }, { data: projects }, { data: templates }, sub] = await Promise.all([
       supabase.from('tasks').select('*').eq('user_id', initialUserId),
       supabase.from('projects').select('*').eq('user_id', initialUserId),
+      supabase.from('task_templates').select('*').eq('user_id', initialUserId),
       fetchSubscription(initialUserId).catch(() => ({ tier: 'free' as SubscriptionTier, expiresAt: null, provider: null })),
     ]);
     // Guard: if the user signed out or switched accounts during the fetch,
@@ -225,6 +301,7 @@ export const useStore = create<AppStore>((set, get) => ({
     set({
       tasks: taskList,
       projects: (projects ?? []).map(rowToProject),
+      templates: (templates ?? []).map(rowToTemplate),
       subscriptionTier: sub.tier,
     });
     rescheduleAllReminders(taskList).catch(() => {});
@@ -247,9 +324,14 @@ export const useStore = create<AppStore>((set, get) => ({
 
     const now = new Date().toISOString();
     const task: Task = { ...taskData, id: uuidv4(), createdAt: now, updatedAt: now };
-    await supabase.from('tasks').insert(taskToRow(task, user.id));
+    const { error } = await supabase.from('tasks').insert(taskToRow(task, user.id));
+    if (error) {
+      get().pushToast(`Couldn't save task: ${error.message}`);
+      return false;
+    }
     set(state => ({ tasks: [...state.tasks, task] }));
     scheduleTaskReminder(task).catch(() => {});
+    syncTaskCreate(task).catch(() => {});
     return true;
   },
 
@@ -270,7 +352,12 @@ export const useStore = create<AppStore>((set, get) => ({
     if ('tags' in updates) row.tags = updates.tags;
     if ('recurrence' in updates) row.recurrence = updates.recurrence ?? null;
     if ('assignedDays' in updates) row.assigned_days = updates.assignedDays ?? null;
-    await supabase.from('tasks').update(row).eq('id', id);
+    if ('actualMinutes' in updates) row.actual_minutes = updates.actualMinutes ?? 0;
+    const { error } = await supabase.from('tasks').update(row).eq('id', id);
+    if (error) {
+      get().pushToast(`Couldn't update task: ${error.message}`);
+      return;
+    }
     set(state => ({
       tasks: state.tasks.map(t => t.id === id ? { ...t, ...updates, updatedAt: now } : t),
     }));
@@ -278,17 +365,25 @@ export const useStore = create<AppStore>((set, get) => ({
     if (updated) {
       cancelTaskReminder(id).catch(() => {});
       if (!updated.isCompleted) scheduleTaskReminder(updated).catch(() => {});
+      syncTaskUpdate(updated).catch(() => {});
     }
   },
 
   deleteTask: async (id) => {
-    await supabase.from('tasks').delete().eq('id', id);
+    const { error } = await supabase.from('tasks').delete().eq('id', id);
+    if (error) {
+      get().pushToast(`Couldn't delete task: ${error.message}`);
+      return;
+    }
     set(state => ({ tasks: state.tasks.filter(t => t.id !== id) }));
     cancelTaskReminder(id).catch(() => {});
+    syncTaskDelete(id).catch(() => {});
   },
 
   completeTask: async (id) => {
     const now = new Date().toISOString();
+    const original = get().tasks.find(t => t.id === id);
+
     await supabase.from('tasks').update({
       is_completed: true,
       completed_date: now,
@@ -300,6 +395,54 @@ export const useStore = create<AppStore>((set, get) => ({
       ),
     }));
     cancelTaskReminder(id).catch(() => {});
+
+    // If this was a recurring task, spawn the next occurrence so the user
+    // sees it again on the next due date. Skip if the next date would be
+    // more than ~1 year out (defensive — no infinite future bubbles).
+    if (original?.recurrence) {
+      const due = parseISO(original.dueDate);
+      if (!isValid(due)) return;
+
+      let nextDue: Date;
+      switch (original.recurrence) {
+        case 'daily':    nextDue = addDays(due, 1); break;
+        case 'weekly':   nextDue = addWeeks(due, 1); break;
+        case 'biweekly': nextDue = addWeeks(due, 2); break;
+        case 'monthly':  nextDue = addMonths(due, 1); break;
+        default: return;
+      }
+
+      const horizonDays = 366;
+      if (differenceInDays(nextDue, new Date()) > horizonDays) return;
+
+      // If a future occurrence already exists, don't double-spawn
+      const nextDueStr = formatDate(nextDue, 'yyyy-MM-dd');
+      const alreadyExists = get().tasks.some(
+        t => !t.isCompleted &&
+          t.recurrence === original.recurrence &&
+          t.name === original.name &&
+          t.dueDate === nextDueStr,
+      );
+      if (alreadyExists) return;
+
+      // Reuse addTask so free-tier limits apply normally. If blocked, the
+      // user gets the upgrade modal — they can still keep their old data.
+      await get().addTask({
+        name: original.name,
+        description: original.description,
+        importance: original.importance,
+        difficulty: original.difficulty,
+        estimatedHours: original.estimatedHours,
+        dueDate: nextDueStr,
+        startDate: original.startDate,
+        isCompleted: false,
+        parentProjectId: original.parentProjectId,
+        colorIndex: original.colorIndex,
+        tags: [...original.tags],
+        recurrence: original.recurrence,
+        assignedDays: original.assignedDays,
+      });
+    }
   },
 
   addProject: async (projectData) => {
@@ -318,7 +461,11 @@ export const useStore = create<AppStore>((set, get) => ({
 
     const now = new Date().toISOString();
     const project: Project = { ...projectData, id: uuidv4(), createdAt: now, updatedAt: now };
-    await supabase.from('projects').insert(projectToRow(project, user.id));
+    const { error } = await supabase.from('projects').insert(projectToRow(project, user.id));
+    if (error) {
+      get().pushToast(`Couldn't save project: ${error.message}`);
+      return false;
+    }
     set(state => ({ projects: [...state.projects, project] }));
     return true;
   },
@@ -340,7 +487,31 @@ export const useStore = create<AppStore>((set, get) => ({
     }));
   },
 
-  deleteProject: async (id) => {
+  deleteProject: async (id, mode = 'unlink') => {
+    // Handle the project's sub-tasks BEFORE deleting the project, so we
+    // never leave orphaned tasks pointing at a missing parent_project_id.
+    const subTasks = get().tasks.filter(t => t.parentProjectId === id);
+
+    if (mode === 'cascade') {
+      // Delete every sub-task — both server and local
+      const subIds = subTasks.map(t => t.id);
+      if (subIds.length > 0) {
+        await supabase.from('tasks').delete().in('id', subIds);
+        for (const subId of subIds) cancelTaskReminder(subId).catch(() => {});
+      }
+      set(state => ({ tasks: state.tasks.filter(t => t.parentProjectId !== id) }));
+    } else {
+      // Unlink: keep the tasks, null out their parent
+      if (subTasks.length > 0) {
+        await supabase.from('tasks').update({ parent_project_id: null }).eq('parent_project_id', id);
+      }
+      set(state => ({
+        tasks: state.tasks.map(t =>
+          t.parentProjectId === id ? { ...t, parentProjectId: undefined } : t
+        ),
+      }));
+    }
+
     await supabase.from('projects').delete().eq('id', id);
     set(state => ({ projects: state.projects.filter(p => p.id !== id) }));
   },
@@ -400,4 +571,93 @@ export const useStore = create<AppStore>((set, get) => ({
 
   setFocusedTaskIds: (ids) => set({ focusedTaskIds: new Set(ids) }),
   clearFocusedTaskIds: () => set({ focusedTaskIds: new Set() }),
+
+  addTemplate: async (tmplData) => {
+    const { user, templates, subscriptionTier, pushToast } = get();
+    if (!user) return false;
+
+    if (subscriptionTier === 'free' && templates.length >= FREE_TEMPLATE_LIMIT) {
+      set({
+        upgradeModalReason: `Free accounts can save up to ${FREE_TEMPLATE_LIMIT} templates. Upgrade to Pro for unlimited routines.`,
+      });
+      return false;
+    }
+
+    const now = new Date().toISOString();
+    const tmpl: TaskTemplate = { ...tmplData, id: uuidv4(), createdAt: now, updatedAt: now };
+    const { error } = await supabase.from('task_templates').insert(templateToRow(tmpl, user.id));
+    if (error) {
+      pushToast(`Couldn't save template: ${error.message}`);
+      return false;
+    }
+    set(state => ({ templates: [...state.templates, tmpl] }));
+    return true;
+  },
+
+  deleteTemplate: async (id) => {
+    const { error } = await supabase.from('task_templates').delete().eq('id', id);
+    if (error) {
+      get().pushToast(`Couldn't delete template: ${error.message}`);
+      return;
+    }
+    set(state => ({ templates: state.templates.filter(t => t.id !== id) }));
+  },
+
+  instantiateTemplate: async (templateId, dueDate) => {
+    const tmpl = get().templates.find(t => t.id === templateId);
+    if (!tmpl) return false;
+    return await get().addTask({
+      name: tmpl.name,
+      description: tmpl.description,
+      importance: tmpl.importance,
+      difficulty: tmpl.difficulty,
+      estimatedHours: tmpl.estimatedHours,
+      dueDate,
+      isCompleted: false,
+      parentProjectId: tmpl.parentProjectId,
+      colorIndex: tmpl.colorIndex,
+      tags: [...tmpl.tags],
+      recurrence: tmpl.recurrence,
+    });
+  },
+
+  pushToast: (message, variant = 'error') => {
+    const id = uuidv4();
+    set(state => ({ toasts: [...state.toasts, { id, message, variant }] }));
+    // Auto-dismiss after 4s
+    setTimeout(() => {
+      set(state => ({ toasts: state.toasts.filter(t => t.id !== id) }));
+    }, 4000);
+  },
+  dismissToast: (id) => set(state => ({ toasts: state.toasts.filter(t => t.id !== id) })),
+
+  setTheme: (themeId) => {
+    set({ themeId });
+    try { localStorage.setItem('bp_theme', themeId); } catch { /* ignore */ }
+  },
+
+  loadThemeFromStorage: () => {
+    try {
+      const raw = localStorage.getItem('bp_theme');
+      if (raw) set({ themeId: raw });
+    } catch { /* ignore */ }
+  },
+
+  startPomodoro: (taskId) => {
+    // Always replace any in-flight session (single-task focus)
+    set({ pomodoro: { taskId, startedAt: Date.now() } });
+  },
+
+  stopPomodoro: async () => {
+    const session = get().pomodoro;
+    if (!session) return;
+    set({ pomodoro: null });
+
+    const minutes = Math.max(1, Math.round((Date.now() - session.startedAt) / 60000));
+    const task = get().tasks.find(t => t.id === session.taskId);
+    if (!task) return;
+
+    const newActual = (task.actualMinutes ?? 0) + minutes;
+    await get().updateTask(session.taskId, { actualMinutes: newActual });
+  },
 }));

@@ -8,6 +8,10 @@ export interface WeeklyStats {
   mostProductiveDay: string | null;
   mostProductiveDayCount: number;
   perDay: Record<string, number>;
+  // Pomodoro-derived: how close estimates were to actual time, or null
+  // if no completed task in the week had a recorded actualMinutes value.
+  estimateAccuracyPct: number | null;
+  totalActualMinutes: number;
 }
 
 // Local-timezone date key (YYYY-MM-DD). Critical: never use
@@ -64,6 +68,9 @@ export function calculateWeeklyStats(tasks: Task[]): WeeklyStats {
   const perDay: Record<string, number> = {};
   let bubblesPopped = 0;
   let totalHoursCompleted = 0;
+  let totalActualMinutes = 0;
+  let totalEstimatedMinutesForTracked = 0;
+  let totalActualMinutesForTracked = 0;
 
   for (const t of tasks) {
     if (!t.isCompleted || !t.completedDate) continue;
@@ -75,6 +82,11 @@ export function calculateWeeklyStats(tasks: Task[]): WeeklyStats {
     perDay[key] = (perDay[key] ?? 0) + 1;
     bubblesPopped++;
     totalHoursCompleted += t.estimatedHours;
+    if (t.actualMinutes && t.actualMinutes > 0) {
+      totalActualMinutes += t.actualMinutes;
+      totalEstimatedMinutesForTracked += Math.round(t.estimatedHours * 60);
+      totalActualMinutesForTracked += t.actualMinutes;
+    }
   }
 
   let mostProductiveDay: string | null = null;
@@ -86,7 +98,24 @@ export function calculateWeeklyStats(tasks: Task[]): WeeklyStats {
     }
   }
 
-  return { bubblesPopped, totalHoursCompleted, mostProductiveDay, mostProductiveDayCount, perDay };
+  // Estimate accuracy: 100% means estimates matched actual time exactly.
+  // Calculated as 100 - (relative error %), clamped to 0..100.
+  let estimateAccuracyPct: number | null = null;
+  if (totalActualMinutesForTracked > 0 && totalEstimatedMinutesForTracked > 0) {
+    const errorPct = Math.abs(totalEstimatedMinutesForTracked - totalActualMinutesForTracked)
+      / totalActualMinutesForTracked * 100;
+    estimateAccuracyPct = Math.max(0, Math.min(100, Math.round(100 - errorPct)));
+  }
+
+  return {
+    bubblesPopped,
+    totalHoursCompleted,
+    mostProductiveDay,
+    mostProductiveDayCount,
+    perDay,
+    estimateAccuracyPct,
+    totalActualMinutes,
+  };
 }
 
 // Used by WeeklyReport bar chart to build day buckets keyed in local time

@@ -1,20 +1,28 @@
 import { useState } from 'react';
 import { useStore } from '../../store';
-import { BUBBLE_COLORS } from '../../constants/colors';
+import { useThemeColors } from '../../constants/colors';
 import { getUrgency, formatFull } from '../../utils/dateUtils';
 import { Modal } from './Modal';
 import { TaskForm } from '../ListView/TaskForm';
 import { Button } from './Button';
 import { Badge } from './Badge';
+import { ConfirmDialog } from './ConfirmDialog';
 
 export function TaskDetail() {
-  const { selectedTaskId, setSelectedTask, tasks, completeTask, deleteTask } = useStore();
+  const {
+    selectedTaskId, setSelectedTask, tasks, completeTask, deleteTask,
+    addTemplate, pushToast,
+    startPomodoro, stopPomodoro, pomodoro, subscriptionTier, showUpgrade,
+  } = useStore();
   const [showEdit, setShowEdit] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [savingTemplate, setSavingTemplate] = useState(false);
 
+  const colors = useThemeColors();
   const task = tasks.find(t => t.id === selectedTaskId);
   if (!task) return null;
 
-  const color = BUBBLE_COLORS[task.colorIndex % BUBBLE_COLORS.length];
+  const color = colors[task.colorIndex % colors.length];
   const urgency = getUrgency(task);
 
   const urgencyLabel = {
@@ -40,11 +48,40 @@ export function TaskDetail() {
     setSelectedTask(null);
   };
 
-  const handleDelete = async () => {
-    if (confirm('Delete this task?')) {
-      await deleteTask(task.id);
-      setSelectedTask(null);
+  const handleDelete = () => setShowDeleteDialog(true);
+  const performDelete = async () => {
+    await deleteTask(task.id);
+    setSelectedTask(null);
+  };
+
+  const handleStartPomodoro = () => {
+    if (subscriptionTier !== 'pro') {
+      showUpgrade('Bubble Pomodoro is a Pro feature. Track focus time on each task and see how your estimates compare to reality.');
+      return;
     }
+    if (pomodoro?.taskId === task.id) {
+      stopPomodoro();
+    } else {
+      startPomodoro(task.id);
+      setSelectedTask(null); // close the detail so the user can see the bubble pulse
+    }
+  };
+
+  const handleSaveAsTemplate = async () => {
+    setSavingTemplate(true);
+    const ok = await addTemplate({
+      name: task.name,
+      description: task.description,
+      importance: task.importance,
+      difficulty: task.difficulty,
+      estimatedHours: task.estimatedHours,
+      colorIndex: task.colorIndex,
+      tags: [...task.tags],
+      recurrence: task.recurrence,
+      parentProjectId: task.parentProjectId,
+    });
+    setSavingTemplate(false);
+    if (ok) pushToast('Saved as routine ✓', 'success');
   };
 
   return (
@@ -114,14 +151,22 @@ export function TaskDetail() {
           )}
 
           {/* Actions */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {!task.isCompleted && (
               <Button variant="primary" className="flex-1" onClick={handleComplete}>
                 Mark complete ✓
               </Button>
             )}
+            {!task.isCompleted && (
+              <Button variant="secondary" onClick={handleStartPomodoro}>
+                {pomodoro?.taskId === task.id ? 'Stop focus' : '🍅 Start focus'}
+              </Button>
+            )}
             <Button variant="secondary" onClick={() => setShowEdit(true)}>
               Edit
+            </Button>
+            <Button variant="ghost" onClick={handleSaveAsTemplate} disabled={savingTemplate}>
+              {savingTemplate ? 'Saving…' : 'Save as routine'}
             </Button>
             <Button variant="danger" onClick={handleDelete}>
               Delete
@@ -139,6 +184,17 @@ export function TaskDetail() {
           }}
         />
       </Modal>
+
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        title="Delete task?"
+        message={`"${task.name}" will be permanently deleted.`}
+        actions={[
+          { label: 'Cancel', variant: 'secondary', onClick: () => {} },
+          { label: 'Delete', variant: 'danger', onClick: performDelete },
+        ]}
+      />
     </>
   );
 }

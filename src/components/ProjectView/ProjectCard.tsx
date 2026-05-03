@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import type { Project } from '../../types';
-import { BUBBLE_COLORS } from '../../constants/colors';
+import { useThemeColors } from '../../constants/colors';
 import { formatDisplay } from '../../utils/dateUtils';
 import { useStore } from '../../store';
 import { Badge } from '../UI/Badge';
@@ -12,6 +12,7 @@ interface ProjectCardProps {
 
 export function ProjectCard({ project, onClick }: ProjectCardProps) {
   const { tasks } = useStore();
+  const BUBBLE_COLORS = useThemeColors();
   const subTasks = tasks.filter(t => t.parentProjectId === project.id);
   const completed = subTasks.filter(t => t.isCompleted).length;
   const total = subTasks.length;

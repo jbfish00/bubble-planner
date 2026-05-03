@@ -10,13 +10,16 @@ import { TopBar } from './components/Navigation/TopBar';
 import { TaskDetail } from './components/UI/TaskDetail';
 import { AuthScreen } from './components/Auth/AuthScreen';
 import { UpgradeModal } from './components/UI/UpgradeModal';
+import { ToastContainer } from './components/UI/ToastContainer';
+import { PomodoroOverlay } from './components/Timer/PomodoroOverlay';
 import { requestNotificationPermission } from './lib/notifications';
 import { isNative } from './lib/platform';
 
 function App() {
   const {
     loadData, viewMode, isDarkMode, user, authLoading, setUser, setAuthLoading,
-    upgradeModalReason, hideUpgrade, loadEnergyFromStorage,
+    upgradeModalReason, hideUpgrade, loadEnergyFromStorage, loadThemeFromStorage,
+    refreshSubscription,
   } = useStore();
 
   // Listen for auth state changes
@@ -52,6 +55,46 @@ function App() {
   useEffect(() => {
     loadEnergyFromStorage();
   }, [loadEnergyFromStorage]);
+
+  // Hydrate active theme from localStorage on mount
+  useEffect(() => {
+    loadThemeFromStorage();
+  }, [loadThemeFromStorage]);
+
+  // Stripe Checkout return handling: poll the subscription a few times
+  // because the webhook may not have fired by the time we redirect back.
+  useEffect(() => {
+    if (!user) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('checkout') !== 'success') return;
+    let cancelled = false;
+    let tries = 0;
+    const poll = async () => {
+      while (!cancelled && tries < 6) {
+        await refreshSubscription();
+        if (useStore.getState().subscriptionTier === 'pro') break;
+        tries++;
+        await new Promise(r => setTimeout(r, 1500));
+      }
+      // Strip the checkout params so a refresh doesn't re-trigger
+      const url = new URL(window.location.href);
+      url.searchParams.delete('checkout');
+      url.searchParams.delete('session_id');
+      window.history.replaceState({}, '', url.pathname + (url.search || ''));
+    };
+    poll();
+    return () => { cancelled = true; };
+  }, [user, refreshSubscription]);
+
+  // Refresh subscription when window regains focus or auth token refreshes,
+  // so a Pro that just expired (or a Pro that just upgraded in another tab)
+  // doesn't keep the user in the wrong tier mid-session.
+  useEffect(() => {
+    if (!user) return;
+    const onFocus = () => { refreshSubscription().catch(() => {}); };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [user, refreshSubscription]);
 
   const views = {
     daily: <BubbleCanvas />,
@@ -97,6 +140,8 @@ function App() {
         onClose={hideUpgrade}
         reason={upgradeModalReason ?? undefined}
       />
+      <ToastContainer />
+      <PomodoroOverlay />
     </div>
   );
 }

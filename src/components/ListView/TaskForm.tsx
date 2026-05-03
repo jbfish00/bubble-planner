@@ -3,12 +3,13 @@ import { useStore } from '../../store';
 import type { Task } from '../../types';
 import { Button } from '../UI/Button';
 import { Badge } from '../UI/Badge';
-import { BUBBLE_COLORS } from '../../constants/colors';
+import { useThemeColors } from '../../constants/colors';
 
 interface TaskFormProps {
   editTask?: Task;
   onClose: () => void;
   defaultDate?: string;
+  initialName?: string;
 }
 
 const HOUR_CHIPS = [0.5, 1, 2, 4, 8, 16];
@@ -20,9 +21,10 @@ const LABEL_STYLE = { paddingLeft: '1rem' } as const;
 const SELECT_STYLE = { paddingLeft: '1rem', paddingTop: '0.5rem', paddingBottom: '0.5rem' } as const;
 const DATE_STYLE = { paddingLeft: '1rem', paddingTop: '0.5rem', paddingBottom: '0.5rem' } as const;
 
-export function TaskForm({ editTask, onClose, defaultDate }: TaskFormProps) {
+export function TaskForm({ editTask, onClose, defaultDate, initialName }: TaskFormProps) {
   const { addTask, updateTask, projects, currentDate } = useStore();
-  const [name, setName] = useState(editTask?.name ?? '');
+  const BUBBLE_COLORS = useThemeColors();
+  const [name, setName] = useState(editTask?.name ?? initialName ?? '');
   const [description, setDescription] = useState(editTask?.description ?? '');
   const [importance, setImportance] = useState<1|2|3|4|5>(editTask?.importance ?? 3);
   const [difficulty, setDifficulty] = useState<1|2|3|4|5>(editTask?.difficulty ?? 2);

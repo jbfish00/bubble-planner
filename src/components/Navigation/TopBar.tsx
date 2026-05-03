@@ -1,9 +1,13 @@
-import { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { useMemo, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../../store';
 import { Modal } from '../UI/Modal';
 import { TaskForm } from '../ListView/TaskForm';
 import { WeeklyReport } from '../UI/WeeklyReport';
+import { SettingsModal } from '../Settings/SettingsModal';
+import { TemplatesModal } from '../Templates/TemplatesModal';
+import { VoiceCapture } from '../Voice/VoiceCapture';
+import { isVoiceSupported } from '../../lib/voice';
 import { calculateStreak } from '../../utils/streakUtils';
 import type { ViewMode } from '../../types';
 
@@ -52,6 +56,13 @@ export function TopBar() {
   const { isDarkMode, toggleDarkMode, viewMode, setViewMode, tasks, subscriptionTier } = useStore();
   const [showAdd, setShowAdd] = useState(false);
   const [showReport, setShowReport] = useState(false);
+  const [showThemes, setShowThemes] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [showVoice, setShowVoice] = useState(false);
+  const [voicePrefill, setVoicePrefill] = useState<string | undefined>(undefined);
+  const addMenuRef = useRef<HTMLDivElement>(null);
+  const voiceSupported = isVoiceSupported();
   const streak = useMemo(
     () => calculateStreak(tasks, subscriptionTier === 'pro'),
     [tasks, subscriptionTier],
@@ -132,6 +143,28 @@ export function TopBar() {
           )}
 
           <motion.button
+            className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            whileTap={{ scale: 0.9 }}
+            style={{ touchAction: 'manipulation' }}
+            onClick={() => setShowThemes(true)}
+            aria-label="Choose theme"
+            title="Themes"
+          >
+            <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 text-gray-600 dark:text-gray-300">
+              <path
+                d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c1 0 1.8-.8 1.8-1.8 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-1 .8-1.8 1.8-1.8H17c2.8 0 5-2.2 5-5C22 6 17.5 2 12 2z"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinejoin="round"
+              />
+              <circle cx="6.5" cy="11.5" r="1.2" fill="currentColor" />
+              <circle cx="9.5" cy="7" r="1.2" fill="currentColor" />
+              <circle cx="14.5" cy="7" r="1.2" fill="currentColor" />
+              <circle cx="17.5" cy="11.5" r="1.2" fill="currentColor" />
+            </svg>
+          </motion.button>
+
+          <motion.button
             className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-base hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             whileTap={{ scale: 0.9 }}
             style={{ touchAction: 'manipulation' }}
@@ -141,27 +174,82 @@ export function TopBar() {
             {isDarkMode ? '☀️' : '🌙'}
           </motion.button>
 
-          <motion.button
-            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-md"
-            style={{
-              background: 'radial-gradient(circle at 35% 35%, #F4D0CB, #E8A598)',
-              touchAction: 'manipulation',
-            }}
-            whileTap={{ scale: 0.9 }}
-            whileHover={{ scale: 1.08 }}
-            onClick={() => setShowAdd(true)}
-            aria-label="Add task"
-          >
-            +
-          </motion.button>
+          <div ref={addMenuRef} className="relative">
+            <motion.button
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-md"
+              style={{
+                background: 'radial-gradient(circle at 35% 35%, #F4D0CB, #E8A598)',
+                touchAction: 'manipulation',
+              }}
+              whileTap={{ scale: 0.9 }}
+              whileHover={{ scale: 1.08 }}
+              onClick={() => setShowAddMenu(v => !v)}
+              aria-label="Add task or use a routine"
+            >
+              +
+            </motion.button>
+            <AnimatePresence>
+              {showAddMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowAddMenu(false)}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                    transition={{ type: 'spring', stiffness: 380, damping: 28 }}
+                    className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-900 rounded-sm shadow-xl border border-gray-100 dark:border-gray-800 z-50 overflow-hidden"
+                  >
+                    <button
+                      className="w-full text-left px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      onClick={() => { setShowAddMenu(false); setVoicePrefill(undefined); setShowAdd(true); }}
+                    >
+                      ➕ New task
+                    </button>
+                    {voiceSupported && (
+                      <button
+                        className="w-full text-left px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800 border-t border-gray-100 dark:border-gray-800"
+                        onClick={() => { setShowAddMenu(false); setShowVoice(true); }}
+                      >
+                        🎤 Voice capture
+                      </button>
+                    )}
+                    <button
+                      className="w-full text-left px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800 border-t border-gray-100 dark:border-gray-800"
+                      onClick={() => { setShowAddMenu(false); setShowTemplates(true); }}
+                    >
+                      📋 Routines
+                    </button>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </header>
 
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="New task">
-        <TaskForm onClose={() => setShowAdd(false)} />
+        <TaskForm
+          onClose={() => { setShowAdd(false); setVoicePrefill(undefined); }}
+          initialName={voicePrefill}
+        />
       </Modal>
 
+      <VoiceCapture
+        isOpen={showVoice}
+        onClose={() => setShowVoice(false)}
+        onResult={(text) => {
+          setVoicePrefill(text);
+          setShowVoice(false);
+          setShowAdd(true);
+        }}
+      />
+
       <WeeklyReport isOpen={showReport} onClose={() => setShowReport(false)} />
+      <SettingsModal isOpen={showThemes} onClose={() => setShowThemes(false)} />
+      <TemplatesModal isOpen={showTemplates} onClose={() => setShowTemplates(false)} />
     </>
   );
 }

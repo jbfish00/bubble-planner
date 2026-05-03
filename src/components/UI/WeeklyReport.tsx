@@ -9,7 +9,7 @@ import {
   calculateWeeklyStats,
   getLastSevenDayKeys,
 } from '../../utils/streakUtils';
-import { BUBBLE_COLORS } from '../../constants/colors';
+import { useThemeColors } from '../../constants/colors';
 
 interface WeeklyReportProps {
   isOpen: boolean;
@@ -18,6 +18,7 @@ interface WeeklyReportProps {
 
 export function WeeklyReport({ isOpen, onClose }: WeeklyReportProps) {
   const { tasks, subscriptionTier, showUpgrade } = useStore();
+  const BUBBLE_COLORS = useThemeColors();
   const cardRef = useRef<HTMLDivElement>(null);
   const isPro = subscriptionTier === 'pro';
   const [shareError, setShareError] = useState<string | null>(null);
@@ -133,6 +134,18 @@ export function WeeklyReport({ isOpen, onClose }: WeeklyReportProps) {
                 <div className="text-xs font-semibold text-gray-600 mt-0.5">best day</div>
               </div>
             </div>
+
+            {stats.estimateAccuracyPct !== null && (
+              <div className="bg-white/70 backdrop-blur-sm rounded-sm p-4 mb-5">
+                <div className="flex items-baseline gap-2">
+                  <div className="text-3xl font-extrabold text-gray-800">{stats.estimateAccuracyPct}%</div>
+                  <div className="text-xs font-semibold text-gray-600">estimate accuracy</div>
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {Math.round(stats.totalActualMinutes / 60 * 10) / 10}h actually tracked via Pomodoro
+                </div>
+              </div>
+            )}
 
             {/* Per-day bar chart */}
             <div className="bg-white/70 backdrop-blur-sm rounded-sm p-4">
