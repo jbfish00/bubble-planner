@@ -45,13 +45,23 @@ serve(async (req: Request) => {
 
   try {
     // @ts-expect-error — Deno global
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
     // @ts-expect-error — Deno global
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     // @ts-expect-error — Deno global
-    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!;
+    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
     // @ts-expect-error — Deno global
     const appUrl = Deno.env.get('APP_URL') ?? 'https://bubbleplanner.app';
+
+    // Fail fast on missing config — better to return a clear 503 than to
+    // call Stripe with `Authorization: Bearer undefined` and surface a
+    // confusing 401 from Stripe.
+    if (!supabaseUrl || !serviceRoleKey || !stripeKey) {
+      console.error('create-checkout missing required env vars');
+      return new Response(JSON.stringify({ error: 'not_configured' }), {
+        status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -135,7 +145,10 @@ serve(async (req: Request) => {
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: 'unknown', detail: String(err) }), {
+    // Don't echo internal error strings to the caller — they may include
+    // schema names, env-var failures, or stack frames.
+    console.error('create-checkout error', err);
+    return new Response(JSON.stringify({ error: 'internal' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

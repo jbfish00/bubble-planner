@@ -326,7 +326,8 @@ export const useStore = create<AppStore>((set, get) => ({
     const task: Task = { ...taskData, id: uuidv4(), createdAt: now, updatedAt: now };
     const { error } = await supabase.from('tasks').insert(taskToRow(task, user.id));
     if (error) {
-      get().pushToast(`Couldn't save task: ${error.message}`);
+      console.error('addTask failed', error);
+      get().pushToast("Couldn't save task. Try again?");
       return false;
     }
     set(state => ({ tasks: [...state.tasks, task] }));
@@ -355,7 +356,8 @@ export const useStore = create<AppStore>((set, get) => ({
     if ('actualMinutes' in updates) row.actual_minutes = updates.actualMinutes ?? 0;
     const { error } = await supabase.from('tasks').update(row).eq('id', id);
     if (error) {
-      get().pushToast(`Couldn't update task: ${error.message}`);
+      console.error('updateTask failed', error);
+      get().pushToast("Couldn't update task. Try again?");
       return;
     }
     set(state => ({
@@ -372,7 +374,8 @@ export const useStore = create<AppStore>((set, get) => ({
   deleteTask: async (id) => {
     const { error } = await supabase.from('tasks').delete().eq('id', id);
     if (error) {
-      get().pushToast(`Couldn't delete task: ${error.message}`);
+      console.error('deleteTask failed', error);
+      get().pushToast("Couldn't delete task. Try again?");
       return;
     }
     set(state => ({ tasks: state.tasks.filter(t => t.id !== id) }));
@@ -463,7 +466,8 @@ export const useStore = create<AppStore>((set, get) => ({
     const project: Project = { ...projectData, id: uuidv4(), createdAt: now, updatedAt: now };
     const { error } = await supabase.from('projects').insert(projectToRow(project, user.id));
     if (error) {
-      get().pushToast(`Couldn't save project: ${error.message}`);
+      console.error('addProject failed', error);
+      get().pushToast("Couldn't save project. Try again?");
       return false;
     }
     set(state => ({ projects: [...state.projects, project] }));
@@ -587,7 +591,8 @@ export const useStore = create<AppStore>((set, get) => ({
     const tmpl: TaskTemplate = { ...tmplData, id: uuidv4(), createdAt: now, updatedAt: now };
     const { error } = await supabase.from('task_templates').insert(templateToRow(tmpl, user.id));
     if (error) {
-      pushToast(`Couldn't save template: ${error.message}`);
+      console.error('addTemplate failed', error);
+      pushToast("Couldn't save routine. Try again?");
       return false;
     }
     set(state => ({ templates: [...state.templates, tmpl] }));
@@ -597,7 +602,8 @@ export const useStore = create<AppStore>((set, get) => ({
   deleteTemplate: async (id) => {
     const { error } = await supabase.from('task_templates').delete().eq('id', id);
     if (error) {
-      get().pushToast(`Couldn't delete template: ${error.message}`);
+      console.error('deleteTemplate failed', error);
+      get().pushToast("Couldn't delete routine. Try again?");
       return;
     }
     set(state => ({ templates: state.templates.filter(t => t.id !== id) }));

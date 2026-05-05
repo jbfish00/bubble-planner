@@ -102,13 +102,21 @@ serve(async (req: Request) => {
   }
 
   // @ts-expect-error — Deno global
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
   // @ts-expect-error — Deno global
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   // @ts-expect-error — Deno global
-  const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!;
+  const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
   // @ts-expect-error — Deno global
-  const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
+  const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
+
+  // Fail fast: a missing webhook secret would make verifyStripeSignature
+  // hash against `undefined` — every event would 400 with a misleading
+  // "signature_invalid" rather than the real cause (missing config).
+  if (!supabaseUrl || !serviceRoleKey || !stripeKey || !webhookSecret) {
+    console.error('stripe-webhook missing required env vars');
+    return new Response('not_configured', { status: 503, headers: corsHeaders });
+  }
 
   const rawBody = await req.text();
   const sigHeader = req.headers.get('stripe-signature');
@@ -179,8 +187,11 @@ serve(async (req: Request) => {
         break;
     }
   } catch (err) {
+    // Log full detail server-side; return only a generic code to Stripe.
+    // Stripe stores webhook responses for diagnostics — leaking schema
+    // names or env-var failures there is unnecessary information disclosure.
     console.error('webhook handler error', err);
-    return new Response(JSON.stringify({ error: String(err) }), {
+    return new Response(JSON.stringify({ error: 'internal' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

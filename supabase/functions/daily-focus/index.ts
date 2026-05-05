@@ -64,11 +64,20 @@ serve(async (req: Request) => {
 
   try {
     // @ts-expect-error — Deno global resolved by Supabase runtime
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
     // @ts-expect-error — Deno global resolved by Supabase runtime
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     // @ts-expect-error — Deno global resolved by Supabase runtime
-    const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')!;
+    const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
+
+    // Fail fast: missing ANTHROPIC_API_KEY would otherwise hit Anthropic
+    // with `x-api-key: undefined` and surface as a confusing 401.
+    if (!supabaseUrl || !serviceRoleKey || !anthropicKey) {
+      console.error('daily-focus missing required env vars');
+      return new Response(JSON.stringify({ error: 'ai_not_configured' }), {
+        status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Verify the caller is a real user
     const authHeader = req.headers.get('Authorization');
@@ -178,7 +187,8 @@ serve(async (req: Request) => {
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: 'unknown', detail: String(err) }), {
+    console.error('daily-focus error', err);
+    return new Response(JSON.stringify({ error: 'internal' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

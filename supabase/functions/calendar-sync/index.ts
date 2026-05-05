@@ -92,9 +92,16 @@ serve(async (req: Request) => {
 
   try {
     // @ts-expect-error — Deno global
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
     // @ts-expect-error — Deno global
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error('calendar-sync missing required env vars');
+      return new Response(JSON.stringify({ error: 'not_configured' }), {
+        status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -250,7 +257,8 @@ serve(async (req: Request) => {
       status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: 'unknown', detail: String(err) }), {
+    console.error('calendar-sync error', err);
+    return new Response(JSON.stringify({ error: 'internal' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
